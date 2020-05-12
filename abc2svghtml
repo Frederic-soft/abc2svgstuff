@@ -1,0 +1,53 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file into an HTML file with static rendering of the score, using abc2svg
+#
+# abc2svghtml <abc_file> [<output_file>]
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+if [ $# -ge 2 ]
+then
+  outfile="$2"
+else
+  outfile="${filename}.html"
+fi
+cd "$directory"
+abcflatten "${filename}.abc" > "${filename}_flat$$.abc"
+abc2svg "${filename}_flat$$.abc" | sed -e "s!<title>[^<]*</title>!<title>${filename}</title>!" > "${outfile}"
+rm -f "${filename}_flat$$.abc"
+url="file://`pwd`/${outfile}"
+
+# This part works only on MacOS
+# It tries to refresh the HTML file in Google Chrome if it is already open.
+if [ "`which osascript`" != "" ]
+then
+# Look for a tab displaying our file in one of Chrome's windows
+# If found, just reload this tab
+# Else, create a new window and load our file in its main tab.
+osascript \
+-e "tell application \"Google Chrome\"" \
+-e "  set res to {}" \
+-e "  repeat with w in windows" \
+-e "    repeat with t in the tabs of w" \
+-e "      if the URL of t is \"${url}\" then" \
+-e "        reload t" \
+-e "        set res to t" \
+-e "        exit repeat" \
+-e "      end if" \
+-e "    end repeat" \
+-e "  end repeat" \
+-e "  if res is {} then" \
+-e "    tell application \"Google Chrome\"" \
+-e "      set w to make new window" \
+-e "      set t to get tab 1 of w" \
+-e "      set the URL of t to \"${url}\"" \
+-e "    end tell" \
+-e "  end if" \
+-e "end tell"
+fi

@@ -1,0 +1,31 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file to MIDI using abc2svg and abc2midi. A MIDI file is produced 
+# for each tune in the ABC file, the names are obtained by suffixing the ABC file 
+# name with an underscore followed by the number of the tune.
+#
+# The produced MIDI files sound at the right pitch because the transposition
+# information is processed by abc2svg before processing by abc2midi.
+#
+# abc2svgmidi <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+abcflatten "${filename}.abc" > "${filename}_flat$$.abc"
+tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
+for t in $tunes
+do
+  echo "Processing tune $t"
+  abc2svg toabc.js  --select X:$t --sounding-score 1 "${filename}_flat$$.abc" \
+    | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
+    | sed -e 's/\$$//' > "${filename}_${t}.abc"
+  abc2midi "${filename}_${t}.abc" -o "${filename}_${t}.mid"
+  rm -f "${filename}_${t}.abc"
+done
+rm -f "${filename}_flat$$.abc"

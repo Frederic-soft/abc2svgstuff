@@ -1,0 +1,21 @@
+#!/bin/sh
+##################################################################################
+#
+# Process an ABC file with abc2svg toabc.js. Useful when the source file 
+# contains conditional statements.
+#
+# abc2svgabc <abc_src_file> <abc_dst_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+if [ ! $# -eq 2 ]
+then
+  echo "# Usage: $0 abc_file dst_abc_file"
+  exit 1
+fi
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+abc2svg toabc.js "${filename}.abc" > "$2"

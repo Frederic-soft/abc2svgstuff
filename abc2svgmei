@@ -1,0 +1,22 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file to MEI using abc2svg. An MEI file is produced for each
+# tune in the ABC file, the names are obtained by suffixing the ABC file name 
+# with an underscore followed by the number of the tune.
+#
+# abc2svgmei <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+tunes=`abcflatten "${filename}.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
+for t in $tunes
+do
+  echo "Processing tune $t"
+  abc2svg tomei.js "${filename}.abc" --select X:$t > "${filename}_${t}.mei"
+done

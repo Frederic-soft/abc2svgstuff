@@ -1,0 +1,36 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file into a MusicXML file, using abc2svg and abc2xml
+#
+# abc2svgxml <abc_file> [<xml_file_base>]
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+if [ $# -lt 1 ]
+then
+  echo "# Usage: abc2svgxml <abc_file> [<xml_file>]"
+  echo "#        Converts an ABC music file into as many MusicXML files as there are tunes in it."
+  echo "#        <xml_file_base> is the optional base name of the generated files."
+  exit 1
+fi
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+xml_base="$filename"
+if [ $# -gt 1 ]
+then
+  xml_base="$2"
+fi
+abcflatten "${filename}.abc" | abcrmtext > "${filename}_flat$$.abc"
+tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
+idx=0
+for t in $tunes
+do
+  echo "Processing tune ${idx} (X:${t})"
+  abc2xml -m ${idx} 1 "${filename}_flat$$.abc" > "${xml_base}_${t}.musicxml"
+  idx=`expr ${idx} + 1`
+done
+rm -f "${filename}_flat$$.abc"

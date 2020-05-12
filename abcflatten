@@ -1,0 +1,43 @@
+#!/bin/sh
+##################################################################################
+#
+# Flatten an ABC file, processing abc-include directives (first level only).
+# Computes the most recent modification date of the includes, and replaces
+# the $d variable with it in the header and footer.
+#
+# abcflatten <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+if [ $# -lt 1 ]
+then
+  echo "# Usage: abcflatten <abc_file>"
+  echo "#        Flatten the first level of includes in an ABC music file."
+  echo "#        Recognizes %%abc-include, I:include and #include."
+  exit 1
+fi
+cd `dirname "$1"`
+includes=`grep -E '^(I:|%%)abc-include' "$1" | sed -e 's/..abc-include  *\([^ ]*\).*$/\1/'`
+dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "$1" ${includes}`
+maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
+fmaxdate=`date -j -f '%Y%m%d%H%M.%S' ${maxdate} '+%Y-%m-%d %H:%M'`
+while IFS= read -r line
+do
+  if [[ "$line" =~ ^%%abc-include ]]
+  then
+    cat `echo "$line" | sed -e 's/^%%abc-include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
+  elif [[ "$line" =~ ^I:abc-include ]]
+  then
+    cat `echo "$line" | sed -e 's/^I:abc-include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
+  elif [[ "$line" =~ ^#include ]]
+  then
+    cat `echo "$line" | sed -e 's/^#include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
+  else
+    echo "$line"
+  fi
+done < "$1" | \
+  sed -e "/^%%header /s/\\\$d/${fmaxdate}/g" \
+      -e "/^%%footer /s/\\\$d/${fmaxdate}/g" \
+>&1
+

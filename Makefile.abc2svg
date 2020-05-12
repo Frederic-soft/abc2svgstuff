@@ -1,0 +1,194 @@
+##################################################################################
+#
+# A makefile to generate dynamic HTML, static HTML, PDF, XML and MIDI files 
+# from ABC sources, using abc2svg.
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+####
+## You may use $(wildcard *.abc) for everything below
+## These settings are the one I use when preparing scores for several parts
+## The ABCSCORE files are in the form NameOfThePiece.abc
+## The ABCHTML files are in the form NameOfThePiece_partA.abc and look just the same 
+## as NameOfThePiece.abc, but the MIDI settings are set for working on part A
+## The ABCMIDI files are generally the same as the ABCHTML files
+####
+# Files that should be rendered as PDF (and as static HTML files)
+ABCSCORE := $(shell ls *.abc | grep -E '^[^_]+\.abc$$')
+# Files that should be rendered as HTML pages
+ABCHTML  := $(wildcard *.abc)
+# Files that should be rendered as MIDI files
+ABCMIDI  := $(wildcard *.abc)
+
+SRC   = $(ABCHTML)
+# PDF files to be generated
+PDF   = $(ABCSCORE:.abc=.pdf)
+# HTML files to be generated (with dynamic interpretation of the abc source)
+HTML  = $(ABCHTML:.abc=.html)
+# HTML files to be generated (with static rendering of the abc source)
+HTMLSTAT = $(ABCSCORE:.abc=_s.html)
+# MusicXML files to be generated
+XML   = $(ABCSCORE:.abc=.xml)
+# MIDI files to be generated
+MIDI  = $(ABCMIDI:.abc=.mid)
+
+# abc2svg scripts to include in the header
+ABC2SVGSCRIPTS = abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js
+# Base URL of the abc2svg scripts
+#ABC2SVGURL     = "http://moinejf.free.fr/js"
+ABC2SVGURL     = "../abc2svg"
+
+# Name of the directory for exporting to MusicXML
+XMLDIR         = musicxml
+# Name of the directory for exporting to MIDI
+MIDIDIR        = midi
+
+default: pdf html midi
+
+all: pdf html htmlstat midi xml
+
+pdf : $(PDF)
+
+html : $(HTML)
+
+htmlstat : $(HTMLSTAT)
+
+midi : $(MIDI)
+
+xml : $(XML)
+
+clean :
+	rm -f $(PDF) $(HTML) $(HTMLSTAT) deps.make
+
+clobber : clean
+	rm -rf $(XMLDIR) $(MIDIDIR)
+
+# Include the file that contains the dependencies between the various abc source files
+include deps.make
+
+# Build the dependency rules between the various abc source files
+deps.make : $(SRC)
+	@echo "Analyzing dependencies...\c"
+	@cat /dev/null > $@
+	@for abc in $(ABCSCORE:.abc=) ; \
+	do \
+	  includes=`grep -E '^(I:|%%)abc-include' "$${abc}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$$/\1/' | tr "\n" "•" | sed -e 's/•/ \\\\\\\\\\\n    /g'` ; \
+	  if [ "A$${includes}Z" != "AZ" ] ; \
+	  then \
+	    echo "$${abc}.pdf : \\\\" >> $@ ; \
+	    echo "    $${abc}.abc \\\\" >> $@ ; \
+	    echo "    $${includes}" >> $@ ; \
+	    echo "" >> $@ ; \
+	  fi ; \
+	done
+	@for abc in $(ABCHTML:.abc=) ; \
+	do \
+	  includes=`grep -E '^(I:|%%)abc-include' "$${abc}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$$/\1/' | tr "\n" "•" | sed -e 's/•/ \\\\\\\\\\\n    /g'` ; \
+	  if [ "A$${includes}Z" != "AZ" ] ; \
+	  then \
+	    echo "$${abc}.html : \\\\" >> $@ ; \
+	    echo "    $${abc}.abc \\\\" >> $@ ; \
+	    echo "    $${includes}" >> $@ ; \
+	    echo "" >> $@ ; \
+	  fi ; \
+	done
+	@for abc in $(ABCSCORE:.abc=) ; \
+	do \
+	  includes=`grep -E '^(I:|%%)abc-include' "$${abc}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$$/\1/' | tr "\n" "•" | sed -e 's/•/ \\\\\\\\\\\n    /g'` ; \
+	  if [ "A$${includes}Z" != "AZ" ] ; \
+	  then \
+	    echo "$${abc}_s.html : \\\\" >> $@ ; \
+	    echo "    $${abc}.abc \\\\" >> $@ ; \
+	    echo "    $${includes}" >> $@ ; \
+	    echo "" >> $@ ; \
+	  fi ; \
+	done
+	@for abc in $(ABCMIDI:.abc=) ; \
+	do \
+	  includes=`grep -E '^(I:|%%)abc-include' "$${abc}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$$/\1/' | tr "\n" "•" | sed -e 's/•/ \\\\\\\\\\\n    /g'` ; \
+	  if [ "A$${includes}Z" != "AZ" ] ; \
+	  then \
+	    echo "$${abc}.mid : \\\\" >> $@ ; \
+	    echo "    $${abc}.abc \\\\" >> $@ ; \
+	    echo "    $${includes}" >> $@ ; \
+	    echo "" >> $@ ; \
+	  fi ; \
+	done
+	@echo " done."
+
+# Make PDFs
+%.pdf:%.abc
+	@echo "$< --> $@"
+	@abcflatten "$<" > "$*_flat$$$$.abc" && abctopdf "$*_flat$$$$.abc" -o "$@" && rm -f "$*_flat$$$$.abc"
+
+# Make HTML with JS rendering
+%.html:%.abc
+	@echo "$< --> $@"
+	@includes=`grep -E '^(I:|%%)abc-include' "$<" | sed -e 's/..abc-include  *\([^ ]*\).*$$/\1/'` ; \
+	dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "$<" $${includes}` ; \
+	maxdate=`echo $$dates | tr ' ' '\n' | sort -r | head -n 1` ; \
+	fmaxdate=`date -j -f '%Y%m%d%H%M.%S' $${maxdate} '+%Y-%m-%d %H:%M'` ; \
+	abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-[0-9\.]*\).*/\1/'` ; \
+	\
+	echo '<!DOCTYPE html>' > "$@" ; \
+	echo '<head>' >> "$@" ; \
+	echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>' >> "$@" ; \
+	echo "<meta name=\"generator\" content=\"$${abc2svgversion}\"/>" >> "$@" ; \
+	echo "<!-- CreationDate: `date`-->" >> "$@" ; \
+	\
+	for script in $(ABC2SVGSCRIPTS) ; \
+	do \
+		echo "<script type=\"text/javascript\" src=\"$(ABC2SVGURL)/$${script}\"></script>" >> "$@" ; \
+	done ; \
+	\
+	echo '<style type="text/css">' >> "$@" ; \
+	echo '	@media print {' >> "$@" ; \
+	echo '		body { margin:0; padding:0; border:0}' >> "$@" ; \
+	echo '		.nop {display:none}' >> "$@" ; \
+	echo '	}' >> "$@" ; \
+	echo '	@page {size:8.27in 11.69in; margin:0}' >> "$@" ; \
+	echo '	svg {display:block}' >> "$@" ; \
+	echo '	* {cursor: pointer;}  // for iPad onclick' >> "$@" ; \
+	echo '</style>' >> "$@" ; \
+	\
+	echo "<title>$*</title>" >> "$@" ; \
+	echo "</head>\n<body>\n<script type=\"text/vnd.abc\" class=\"abc\">" >> "$@" ; \
+	\
+	abcflatten "$<" >> "$@" ; \
+	\
+	echo "</script>\n</body>\n</html>" >> "$@"
+
+# Make static HTML
+%_s.html:%.abc
+	@echo "$< --> $@"
+	@abcflatten "$<" > "$*_flat$$$$.abc" && (abc2svg "$*_flat$$$$.abc" | \
+		sed -e 's!<title>[^<]*</title>!<title>$*</title>!' > "$@") && rm "$*_flat$$$$.abc"
+
+# Export to MusicXML
+%.xml:%.abc
+	@mkdir -p "$(XMLDIR)"
+	@abcflatten "$<" |abcrmtext > "$*_flat$$$$.abc" ; \
+	tunes=`grep '^X:' "$*_flat$$$$.abc" | sed -e 's/X:\([0-9]*\).*$$/\1/'` ; \
+	idx=0 ; \
+	for t in $${tunes} ; \
+	do \
+		echo "Processing tune $${idx} (X:$${t}) of $< ...\c" ; \
+		abc2xml -m $${idx} 1 "$*_flat$$$$.abc" > "$(XMLDIR)/$*_$${t}.xml" 2> /dev/null ; \
+		idx=`expr $${idx} + 1` ; \
+		echo " -> $*_$${t}.xml" ; \
+	done && rm -f "$*_flat$$$$.abc"
+
+# Export to MIDI
+%.mid:%.abc
+	@mkdir -p "$(MIDIDIR)"
+	@abcflatten "$<" > "$*_flat$$$$.abc" ; \
+	tunes=`grep '^X:' "$*_flat$$$$.abc" | sed -e 's/X:\([0-9]*\).*$$/\1/'` ; \
+	for t in $${tunes} ; \
+	do \
+		echo "Processing tune $${t} of $< ...\c" ; \
+		abc2svg toabc.js --select X:$$t --sounding-score 1 "$*_flat$$$$.abc" | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' | sed -e 's/\$$//' > "$*_$$t.abc" ; \
+		abc2midi "$*_$$t.abc" -o "$(MIDIDIR)/$*_$$t.mid" > /dev/null ; \
+		echo " -> $*_$${t}.mid" && rm -f "$*_$$t.abc" ; \
+	done && rm -f "$*_flat$$$$.abc"

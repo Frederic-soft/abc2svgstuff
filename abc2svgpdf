@@ -1,0 +1,28 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file to PDF using abc2svg.
+#
+# abc2svgpdf <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
+abctopdf "${filename}_tmp$$.abc" -o "${filename}.pdf"
+rm "${filename}_tmp$$.abc"
+pdf="`pwd`/${filename}.pdf"
+
+# This part works only on MacOS
+# It opens/refreshes the PDF file in Skim.
+if [ "`which osascript`" != "" ]
+then
+osascript \
+-e "tell application \"Skim\"" \
+-e "  open POSIX file \"${pdf}\"" \
+-e "end tell"
+fi

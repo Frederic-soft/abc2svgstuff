@@ -1,0 +1,14 @@
+#!/bin/sh
+##################################################################################
+#
+# A wrapper to run abctopdf with node when abc2svg is not installed with npm
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+# Path to the directory containing the "abc2svg" installaion directory
+# It plays the same role as the node_modules directory
+ABC2SVGDIR=/Users/boulange/Documents/Dev/ABC
+
+${ABC2SVGDIR}/abc2svg/abctopdf "$@"
