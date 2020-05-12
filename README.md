@@ -8,16 +8,16 @@ Various things that are useful when working with [abc2svg](https://chiselapp.com
 * The ABC notation standard <http://abcnotation.com/wiki/abc:standard:v2.2>
 
 ## Explanations
-* abc2svg is a wrapper script for using abc2svg with node when it is not installed by npm
-* abc2svgabc is a helper script for abc2svg toabc.js
-* abc2svghtml uses abc2svg to generate a static HTML page (no JavaScript required) from an ABC source file
-* abc2svgmei uses abc2svg to convert an ABC source file to [MEI](https://music-encoding.org/)
-* abc2svgmidi uses abc2svg and abc2midi to convert an ABC source file into MIDI files
-* abc2svgpdf uses abc2svg to generate a PDF file from an ABC source file
-* abc2svgweb uses abc2svg to generate a dynamic HTML page with MIDI playback (JavaScript required) from an ABC source file
-* abc2svgxml uses abc2svg and abc2xml to convert an ABC source file into [MusicXML](https://www.musicxml.com/) files
-* abcflatten is a helper script for processing includes in an ABC file
-* abcrmtext is a helper script for suppressing text block from an ABC file
-* abctopdf is a wrapper script for running abctopdf when abc2svg is not installed by npm
-* Makefile.abc2svg is a Makefile that you can use to convert ABC files to PDF, static or dynamic HTML, MIDI, and MusicXML.
+* `Makefile.abc2svg` is a Makefile that you can use to convert ABC files to PDF, static or dynamic HTML, MIDI, and MusicXML.
   It relies only on an installation of abc2svg and the abcflatten and abcrmtext scripts.
+* `abc2svg` is a wrapper script for using abc2svg with node when it is not installed by npm
+* `abc2svgabc` is a helper script for abc2svg toabc.js
+* `abc2svghtml` uses abc2svg to generate a static HTML page (no JavaScript required) from an ABC source file
+* `abc2svgmei` uses abc2svg to convert an ABC source file to [MEI](https://music-encoding.org/)
+* `abc2svgmidi` uses abc2svg and abc2midi to convert an ABC source file into MIDI files
+* `abc2svgpdf` uses abc2svg to generate a PDF file from an ABC source file
+* `abc2svgweb` uses abc2svg to generate a dynamic HTML page with MIDI playback (JavaScript required) from an ABC source file
+* `abc2svgxml` uses abc2svg and abc2xml to convert an ABC source file into [MusicXML](https://www.musicxml.com/) files
+* `abcflatten` is a helper script for processing includes in an ABC file
+* `abcrmtext` is a helper script for suppressing text block from an ABC file
+* `abctopdf` is a wrapper script for running abctopdf when abc2svg is not installed by npm
