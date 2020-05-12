@@ -1,2 +1,2 @@
 # abc2svgstuff
-Various things useful to work with abc2svg
+Various uthings useful to work with abc2svg
