@@ -13,6 +13,7 @@
 ## URL of the abc2svg files
 # abc2svgurl="http://moinejf.free.fr/js"
 # abc2svgurl="file:///usr/local/lib/node_modules/abc2svg"
+# abc2svgurl="file:///usr/local/ABC/abc2svg"
 abc2svgurl="../abc2svg"
 
 ## Scripts to include in the header
