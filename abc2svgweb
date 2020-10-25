@@ -19,7 +19,8 @@ abc2svgurl="../abc2svg"
 ## Scripts to include in the header
 # abc2svgscripts="abc2svg-1.js abcemb-1.js play-1.js follow-1.js"
 # abc2svgscripts="abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js"
-abc2svgscripts="abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js"
+# abc2svgscripts="abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js"
+abc2svgscripts="abcweb-1.js snd-1.js follow-1.js"
 
 if [ $# -lt 1 ]
 then
@@ -78,6 +79,10 @@ for script in ${abc2svgscripts}
 do
   echo "<script type=\"text/javascript\" src=\"${abc2svgurl}/${script}\"></script>" >> "${outfile}"
 done
+
+# <script type="text/javascript">
+#   window.no_scroll = true ;  // de-activate auto-scrolling when playing the music
+# </script>
 
 cat >> "${outfile}" << ENDOFSTYLE
 <style type="text/css">

@@ -35,7 +35,7 @@ XML   = $(ABCSCORE:.abc=.xml)
 MIDI  = $(ABCMIDI:.abc=.mid)
 
 # abc2svg scripts to include in the header
-ABC2SVGSCRIPTS = abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js
+ABC2SVGSCRIPTS = abcweb-1.js snd-1.js follow-1.js
 # Base URL of the abc2svg scripts
 #ABC2SVGURL     = "http://moinejf.free.fr/js"
 ABC2SVGURL     = "../abc2svg"
