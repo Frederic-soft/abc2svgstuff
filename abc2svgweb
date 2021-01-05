@@ -104,7 +104,7 @@ abcflatten "${filename}.abc" \
     | sed -e "/^%%header /s/\\\$d/${fmaxdate}/g" \
           -e "/^%%footer /s/\\\$d/${fmaxdate}/g" \
 >> "${outfile}"
-    
+
 echo "</script>\n</body>\n</html>" >> "${outfile}"
 
 # This part works only on MacOS

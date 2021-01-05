@@ -1,6 +1,10 @@
 # abc2svgstuff
 Various things that are useful when working with [abc2svg](https://chiselapp.com/user/moinejf/repository/abc2svg/doc/trunk/README.md)
 
+Requires `coreutils` (for `realpath`):
+* `brew install coreutils` with MacOS
+* `apt-get install coreutils` with Linux
+
 ## Some resources:
 * Jean-François Moine's page (abc2svg) <http://moinejf.free.fr/>
 * Seymour Shlien's page (abc2midi and others) <https://ifdo.ca/~seymour/runabc/top.html>
