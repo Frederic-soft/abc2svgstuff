@@ -12,5 +12,6 @@
 ME=`realpath $0`
 CURDIR=`dirname ${ME}`
 ABC2SVGDIR=`realpath "${CURDIR}/.."`
-
-env NODE_PATH=${ABC2SVGDIR} node ${ABC2SVGDIR}/abc2svg/abc2svg "$@"
+## 
+## env NODE_PATH=${ABC2SVGDIR} node ${ABC2SVGDIR}/abc2svg/abc2svg-1 "$@"
+${ABC2SVGDIR}/abc2svg/abcnode "$@"

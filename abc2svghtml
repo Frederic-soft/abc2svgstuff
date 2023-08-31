@@ -19,7 +19,7 @@ else
 fi
 cd "$directory"
 abcflatten "${filename}.abc" > "${filename}_flat$$.abc"
-abc2svg "${filename}_flat$$.abc" | sed -e "s!<title>[^<]*</title>!<title>${filename}</title>!" > "${outfile}"
+abc2svg tohtml.js "${filename}_flat$$.abc" | sed -e "s!<title>[^<]*</title>!<title>${filename}</title>!" > "${outfile}"
 rm -f "${filename}_flat$$.abc"
 url="file://`pwd`/${outfile}"
 
