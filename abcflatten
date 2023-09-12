@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/zsh
 ##################################################################################
 #
 # Flatten an ABC file, processing abc-include directives (first level only).
@@ -34,7 +34,8 @@ do
   then
     cat `echo "$line" | sed -e 's/^#include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
   else
-    echo "$line"
+# Use echo -E to avoid the expansion of escape sequences such as \n
+    echo -E "$line"
   fi
 done < "$1" | \
   sed -e "/^%%header /s/\\\$d/${fmaxdate}/g" \
