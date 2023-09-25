@@ -59,9 +59,9 @@ fi
 cd "$directory"
 # Find included ABC files
 includes=`grep -E '^(I:|%%)abc-include' "${filename}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$/\1/'`
-# echo ${includes}
 # Get the modification date of all files
-dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "${filename}.abc" ${includes}`
+#dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "${filename}.abc" ${includes}`
+dates=`echo "${filename}.abc" ${includes} | xargs stat -t '%Y%m%d%H%M.%S' -f '%Sm'`
 # Get the most recent modification date
 maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
 # Format this date as YYYY-MM-DD hh:mm
