@@ -21,7 +21,7 @@ cd `dirname "$1"`
 includes=`grep -E '^(I:|%%)abc-include' "$1" | sed -e 's/..abc-include  *\([^ ]*\).*$/\1/'`
 
 #dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "$1" ${includes}`
-dates=`echo ${includes} | xargs stat -t '%Y%m%d%H%M.%S' -f '%Sm'`
+dates=`echo "$1" ${includes} | xargs stat -t '%Y%m%d%H%M.%S' -f '%Sm'`
 maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
 fmaxdate=`date -j -f '%Y%m%d%H%M.%S' ${maxdate} '+%Y-%m-%d %H:%M'`
 while IFS= read -r line

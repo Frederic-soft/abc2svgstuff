@@ -24,13 +24,16 @@ if [ $# -gt 1 ]
 then
   xml_base="$2"
 fi
-abcflatten "${filename}.abc" | abcrmtext > "${filename}_flat$$.abc"
+abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' | abcrmtext > "${filename}_flat$$.abc"
 tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
-idx=0
 for t in $tunes
 do
-  echo "Processing tune ${idx} (X:${t})"
-  abc2xml -m ${idx} 1 "${filename}_flat$$.abc" > "${xml_base}_${t}.musicxml"
-  idx=`expr ${idx} + 1`
+  echo "Processing tune X:${t}"
+  abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" \
+    | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
+    | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
+    | sed -e 's/\$$//' > "${filename}_${t}.abc"
+  abc2xml "${filename}_${t}.abc" > "${xml_base}_${t}.musicxml"
+  rm -f "${filename}_${t}.abc"
 done
 rm -f "${filename}_flat$$.abc"

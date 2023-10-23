@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/zsh
 ##################################################################################
 #
 # Removes the contents of text blocks in an ABC file to avoid perturbation 
@@ -26,9 +26,10 @@ do
   then
     gobbling=0
   else
-    if [ $gobbling == 0 ]
+    if [ $gobbling -eq 0 ]
     then
-	    echo "$line"
+		# Use echo -E to avoid the expansion of escape sequences such as \n
+    	echo -E "$line"
 	  fi
   fi
 done

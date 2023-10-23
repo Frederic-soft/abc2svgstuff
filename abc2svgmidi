@@ -17,13 +17,15 @@
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
 cd "$directory"
-abcflatten "${filename}.abc" > "${filename}_flat$$.abc"
+# Escape \n as \\\\n so that abc2svg toabc.js does not expand it
+abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' > "${filename}_flat$$.abc"
 tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
 for t in $tunes
 do
   echo "Processing tune $t"
   abc2svg toabc.js  --select X:$t --sounding-score 1 "${filename}_flat$$.abc" \
     | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
+    | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
     | sed -e 's/\$$//' > "${filename}_${t}.abc"
   abc2midi "${filename}_${t}.abc" -o "${filename}_${t}.mid"
   rm -f "${filename}_${t}.abc"
