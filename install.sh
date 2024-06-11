@@ -6,6 +6,7 @@ TOOLS="abc2svg \
 	  abc2svgmei \
 	  abc2svgmidi \
 	  abc2svgpdf \
+	  abc2svgpdfcrop \
 	  abc2svgweb \
 	  abc2svgxml \
 	  abcflatten \
