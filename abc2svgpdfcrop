@@ -1,0 +1,18 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file to PDF cropped at its natural size.
+#
+# abc2svgpdfcrop <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+cd "$directory"
+abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
+abctopdf "${filename}_tmp$$.abc" -o "${filename}_tmp$$.pdf"
+pdfcrop "${filename}_tmp$$.pdf" "${filename}.pdf"
+rm "${filename}_tmp$$.abc" "${filename}_tmp$$.pdf"
