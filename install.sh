@@ -1,5 +1,5 @@
 #!/bin/sh
-INSTALLDIR=/opt/bin
+INSTALLDIR="$HOME/bin"
 TOOLS="abc2svg \
 	  abc2svgabc \
 	  abc2svghtml \
@@ -21,12 +21,12 @@ if [[ ! ${REPLY} =~ ^[Yy]$ ]]
 then
 	exit 1
 fi
-if [[ ! -d ${INSTALLDIR} ]]
+if [[ ! -d "${INSTALLDIR}" ]]
 then
-	mkdir -p ${INSTALLDIR}
+	mkdir -p "${INSTALLDIR}"
 fi
 for t in ${TOOLS}
 do
 	echo "ln -s ${CURDIR}/$t ${INSTALLDIR}/$t"
-	ln -s ${CURDIR}/$t ${INSTALLDIR}/$t
+	ln -s "${CURDIR}/$t" "${INSTALLDIR}/$t"
 done

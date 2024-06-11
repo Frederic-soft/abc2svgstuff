@@ -109,35 +109,73 @@ abcflatten "${filename}.abc" \
 
 echo "</script>\n</body>\n</html>" >> "${outfile}"
 
-# This part works only on MacOS
-# It tries to refresh the HTML file in Google Chrome if it is already open.
-if [ "`which osascript`" != "" ]
-then
-# Look for a tab displaying our file in one of Chrome's windows
-# If found, just reload this tab
-# Else, create a new window and load our file in its main tab.
-url="file://`pwd`/${outfile}"
-osascript \
--e "tell application \"Google Chrome\"" \
--e "  set res to {}" \
--e "  repeat with w in windows" \
--e "    repeat with t in the tabs of w" \
--e "      set u to the URL of t" \
--e "      set hashidx to the offset of \"#\" in u" \
--e "      set u to characters 1 thru (hashidx-1) of u as string" \
--e "      if u is \"${url}\" then" \
--e "        reload t" \
--e "        set res to t" \
--e "        exit repeat" \
--e "      end if" \
--e "    end repeat" \
--e "  end repeat" \
--e "  if res is {} then" \
--e "    tell application \"Google Chrome\"" \
--e "      set w to make new window" \
--e "      set t to get tab 1 of w" \
--e "      set the URL of t to \"${url}\"" \
--e "    end tell" \
--e "  end if" \
--e "end tell"
-fi
+## Can be used in BBEdit with the following OSA script in the Scripting folder
+# tell application "BBEdit"
+# 	set numdocs to the number of text documents
+# 	if numdocs > 0 then
+# 		set frontdoc to the active document of window 1
+# 		if (modified of frontdoc) then
+# 			save frontdoc
+# 		end if
+# 		set abcfileq to the quoted form of POSIX path of (get file of frontdoc)
+# 		set abcfile to POSIX path of (get file of frontdoc)
+# 		set cmd to "abc2svgweb " & abcfileq
+# 		tell application "Terminal"
+# 			set numterms to count windows
+# 			if numterms > 0 then
+# 				do script cmd in window 1
+# 			else
+# 				do script cmd
+# 			end if
+# 		end tell
+# 		set delimorig to AppleScript's text item delimiters
+# 		set AppleScript's text item delimiters to {"."}
+# 		set pathItems to text items of abcfile
+# 		set AppleScript's text item delimiters to delimorig
+# 		set fileurl to "file://"
+# 		set n to 1
+# 		repeat ((number of items in pathItems) - 1) times
+# 			set fileurl to fileurl & item n in pathItems
+# 		end repeat
+# 		set fileurl to fileurl & ".html"
+# 		set delimorig to AppleScript's text item delimiters
+# 		set AppleScript's text item delimiters to {" "}
+# 		set pathItems to text items of fileurl
+# 		set AppleScript's text item delimiters to delimorig
+# 		set fileurl to ""
+# 		set n to 1
+# 		repeat (number of items in pathItems) times
+# 			if n = 1 then
+# 				set fileurl to item n in pathItems
+# 			else
+# 				set fileurl to fileurl & "%20" & item n in pathItems
+# 			end if
+# 			set n to n + 1
+# 		end repeat
+# 		tell application "Google Chrome"
+# 			set res to {}
+# 			repeat with w in windows
+# 				repeat with t in tabs of w
+# 					set u to the URL of t
+# 					set delimorig to AppleScript's text item delimiters
+# 					set AppleScript's text item delimiters to {"#"}
+# 					set urlItems to text items of u
+# 					set AppleScript's text item delimiters to delimorig
+# 					set u to item 1 in urlItems
+# 					if u = fileurl then
+# 						reload t
+# 						set res to t
+# 						exit repeat
+# 					end if
+# 				end repeat
+# 			end repeat
+# 			if res is {} then
+# 				tell application "Google Chrome"
+# 					set w to make new window
+# 					set t to get tab 1 of w
+# 					set the URL of t to fileurl
+# 				end tell
+# 			end if
+# 		end tell
+# 	end if
+# end tell

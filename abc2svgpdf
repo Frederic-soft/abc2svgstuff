@@ -15,14 +15,34 @@ cd "$directory"
 abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
 abctopdf "${filename}_tmp$$.abc" -o "${filename}.pdf"
 rm "${filename}_tmp$$.abc"
-pdf="`pwd`/${filename}.pdf"
 
-# This part works only on MacOS
-# It opens/refreshes the PDF file in Skim.
-if [ "`which osascript`" != "" ]
-then
-osascript \
--e "tell application \"Skim\"" \
--e "  open POSIX file \"${pdf}\"" \
--e "end tell"
-fi
+## Can be used in BBEdit with the following OSA script in the Scripting folder
+# tell application "BBEdit"
+# 	set numdocs to the number of text documents
+# 	if numdocs > 0 then
+# 		set frontdoc to the active document of window 1
+# 		if (modified of frontdoc) then
+# 			save frontdoc
+# 		end if
+# 		set abcpath to the POSIX path of (get file of frontdoc)
+# 		set cmd to "abc2svgpdf " & the quoted form of abcpath
+# 		--
+# 		set the text item delimiters of AppleScript to "."
+# 		set parts to the text items of abcpath
+# 		set pdfpath to ""
+# 		repeat with index from 1 to ((length of parts) - 1)
+# 			set pdfpath to pdfpath & item index of parts
+# 		end repeat
+# 		set pdfpath to pdfpath & ".pdf"
+# 		--
+# 		set cmd to cmd & " && open " & the quoted form of pdfpath
+# 		tell application "Terminal"
+# 			set numterms to count windows
+# 			if numterms > 0 then
+# 				do script cmd in window 1
+# 			else
+# 				do script cmd
+# 			end if
+# 		end tell
+# 	end if
+# end tell
