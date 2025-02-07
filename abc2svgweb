@@ -67,14 +67,15 @@ maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
 # Format this date as YYYY-MM-DD hh:mm
 fmaxdate=`date -j -f '%Y%m%d%H%M.%S' ${maxdate} '+%Y-%m-%d %H:%M'`
 # Get the version of abc2svg
-abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-[0-9\.]*\).*/\1/'`
+# abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-[0-9\.]*\).*/\1/'`
+abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-.*\)/\1/'`
 # Prépare the HTML file
 cat > "${outfile}" << ENDOFPRELUDE
 <!DOCTYPE html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 ENDOFPRELUDE
-# echo "<meta name=\"generator\" content=\"${abc2svgversion}\"/>" >> "${outfile}"
+echo "<meta name=\"generator\" content=\"${abc2svgversion}\"/>" >> "${outfile}"
 echo "<!-- CreationDate: `date`-->" >> "${outfile}"
 
 for script in ${abc2svgscripts}
@@ -94,6 +95,7 @@ cat >> "${outfile}" << ENDOFSTYLE
 	}
 	@page {size:8.27in 11.69in; margin:0}
 	svg {display:block}
+	.nop {line-height: 2.5ex}
 	* {cursor: pointer;}  // for iPad onclick
 </style>
 ENDOFSTYLE
