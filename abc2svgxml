@@ -29,10 +29,12 @@ tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/
 for t in $tunes
 do
   echo "Processing tune X:${t}"
+  abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" > "${filename}_${t}.abc"
   abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" \
     | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
     | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
-    | sed -e 's/\$$//' > "${filename}_${t}.abc"
+    | sed -e 's/\$$//' \
+    | sed -e '/^$/d' > "${filename}_${t}.abc"
   abc2xml "${filename}_${t}.abc" > "${xml_base}_${t}.musicxml"
   rm -f "${filename}_${t}.abc"
 done
