@@ -13,10 +13,21 @@
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-
+if [ $# -ne 1 ]
+then
+	echo "# Usage: $0 abc_file [<midi_file_base>]"
+	echo "# Gives a MIDI rendering of each tune of an abc_file"
+	echo "# <midi_file_base> is the optional base name of the generated files."
+	exit 1
+fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
 cd "$directory"
+midi_base="$filename"
+if [ $# -gt 1 ]
+then
+  midi_base="$2"
+fi
 # Escape \n as \\\\n so that abc2svg toabc.js does not expand it
 abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' > "${filename}_flat$$.abc"
 tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
@@ -27,7 +38,7 @@ do
     | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
     | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
     | sed -e 's/\$$//' > "${filename}_${t}.abc"
-  abc2midi "${filename}_${t}.abc" -o "${filename}_${t}.mid"
+  abc2midi "${filename}_${t}.abc" -o "${midi_base}_${t}.mid"
   rm -f "${filename}_${t}.abc"
 done
 rm -f "${filename}_flat$$.abc"

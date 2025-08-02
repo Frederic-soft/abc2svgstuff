@@ -11,7 +11,7 @@
 
 if [ $# -lt 1 ]
 then
-  echo "# Usage: abc2svgxml <abc_file> [<xml_file>]"
+  echo "# Usage: abc2svgxml <abc_file> [<xml_file_base>]"
   echo "#        Converts an ABC music file into as many MusicXML files as there are tunes in it."
   echo "#        <xml_file_base> is the optional base name of the generated files."
   exit 1

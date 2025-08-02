@@ -9,6 +9,12 @@
 #
 ##################################################################################
 
+if [ $# -ne 1 ]
+then
+	echo "# Usage: $0 abc_file"
+	echo "# Gives a PDF rendering of the tunes of an abc_file"
+	exit 1
+fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
 cd "$directory"
