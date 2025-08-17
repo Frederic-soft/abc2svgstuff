@@ -1,0 +1,60 @@
+\documentclass[a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[top=2cm,left=2cm]{geometry}
+\usepackage{calc}
+\usepackage[%
+  keepfiles
+]{abcsvgintex}
+\abcsvgauxdir{./abcsvgtmp/}
+\newsavebox{\mybox}
+
+\begin{abcsvgprefix}{\choral}
+  V:S clef=treble stem=up dyn=up
+  V:A clef=treble stem=down dyn=up
+  V:T clef=bass stem=up dyn=down octave=-2
+  I:  clef=bass octave=-2
+  V:B clef=bass stem=down dyn=down octave=-2
+  I:  clef=bass octave=-2
+  %%staves {(S A) (T B)}
+\end{abcsvgprefix}
+
+\begin{document}
+Une page de musique :
+
+\abcsvgsettings{%
+  raise=-0.5\height+0.5ex,
+  prelude=\choral
+}%
+\abcsvgpdfsettings{pagewidth=10cm,maxshrink=0.5,measurenb=-1,printtempo=0}%
+\noindent La musique :
+\begin{abcsvg}
+  M:C
+  L:1/4
+  Q:1/4=60
+  K:C
+  [V:S] c d e f  | d B c2        |]
+  [V:A] G3    A  | G F E/2F/2  E |]
+  [V:T] e'd'c'd'-| d'2 c'/2a/2 g |]
+  [V:B] c B c A  | B G c2        |]
+\end{abcsvg}
+\ adoucit les mœurs.
+
+\noindent Une boîte 
+\abcsvgsettings{%
+  prelude=\relax
+}%
+\begin{abcsvgbox}{\mybox}
+  T: Un essai
+  C: Frédéric Boulanger
+  M:C
+  L:1/4
+  K:C
+  [CE][DF][EG][FA] |]
+\end{abcsvgbox}
+\raisebox{-\height}{\fboxsep0pt\fbox{\usebox{\mybox}}}
+à musique.
+
+Voilà !
+
+\end{document}

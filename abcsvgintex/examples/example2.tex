@@ -1,0 +1,458 @@
+\documentclass[a4paper,twoside]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[%
+  a4paper,
+  top=1.5cm, bottom=1.5cm,
+  left=1.5cm,right=2.5cm,
+  bindingoffset=0.5cm
+]{geometry}
+\usepackage{calc}
+\usepackage{pict2e}
+% \usepackage{fourier}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage{xspace}
+\usepackage[french]{babel}
+\usepackage[%
+%  keepfiles,   % keep ABC and PDF files between runs
+  reusefiles,  % reuse ABC and PDF files from previous runs
+%                %  (implies keepfiles)
+]{abcsvgintex}
+\abcsvgauxdir{./abcsvgtmp/}
+
+% A prefix (to be used in \prelude=\choral) for chorals.
+% Four voices are defined: Soprano, Alto, Tenor and Bass.
+% Soprano and Alto use the treble clef on the top staff, Tenor and 
+% Bass use the bass clef on the lower staff. The 'I' fields tell 
+% abc2midi that notes in the Tenor and Bass voices are to be played 
+% two octaves lower (for abcm2ps, we write "a" instead of "A," for 
+% the A which is on the upper line of the staff with bass clef).
+\begin{abcsvgprefix}{\choral}
+  V:S clef=treble stem=up dyn=up
+  V:A clef=treble stem=down dyn=up
+  V:T clef=bass stem=up dyn=down octave=-2
+  I:  clef=bass octave=-2
+  V:B clef=bass stem=down dyn=down octave=-2
+  I:  clef=bass octave=-2
+  %%staves {(S A) (T B)}
+\end{abcsvgprefix}
+
+% A prefix (to be used in \prelude=\piano) for piano.
+% Two voices are defined, one (D) for the right hand, using the 
+% treble clef, and the other (G) for the left hand, using the bass 
+% clef.
+\begin{abcsvgprefix}{\piano}
+  V:D clef=treble stem=up dyn=up
+  V:G clef=bass stem=down dyn=down
+  I:  clef=bass octave=-2
+  %%staves {D G}
+\end{abcsvgprefix}
+
+% A LaTeX savebox to put music in.
+\newsavebox{\musicbox}
+
+\setlength{\parindent}{0pt}
+\newlength{\staffwidth}
+\newcommand{\accord}[3]{%
+  \textrm{#1}\({\,}_{#2}^{#3}\)%
+}
+\newcommand{\tbox}[1]{%
+  \makebox(0,0)[t]{\sffamily#1}
+}
+\newcommand{\bbox}[1]{%
+  \makebox(0,0)[b]{\sffamily#1}
+}
+\newcommand{\pbox}[1]{%
+  \hbox to 0pt{\hss\parbox[b]{\linewidth}{\sffamily\centering#1}\hss}%
+}
+\newcommand{\rcrochet}[1]{%
+  \begin{picture}(0,0)(0,0)
+    \put(0,0){\line(1,0){5}}
+    \put(5,0){\line(0,-1){#1}}
+    \put(5,-#1){\line(-1,0){5}}
+  \end{picture}
+}
+\newcommand{\lcrochet}[1]{%
+  \begin{picture}(0,0)(0,0)
+    \put(0,0){\line(-1,0){5}}
+    \put(-5,0){\line(0,-1){#1}}
+    \put(-5,-#1){\line(1,0){5}}
+  \end{picture}
+}
+
+\begin{document}
+
+\begin{center}
+  \LARGE\bfseries\itshape 7\ieme de dominante en majeur
+\end{center}
+
+\bigskip
+
+Dans l'accord de 7\ieme de dominante, on peut éliminer la quinte et
+doubler la fondamentale quel que soit le renversement. Dans la
+notation \accord{}+7, le signe \(+\) indique la sensible qui doit
+obligatoirement trouver sa résolution dans l'accord suivant comme
+indiqué ci-après.
+
+\smallskip
+
+% We want staves almost as wide as a line
+\setlength{\staffwidth}{0.99\linewidth}
+\abcsvgpdfsettings{%
+%  staffwidth=\the\staffwidth,  % set the width of the staff
+  pagewidth=\the\staffwidth,  % set the width of the staff
+  leftmargin=0pt,
+  rightmargin=0pt,
+  linebreak=<none>,            % don't obey lines in the ABC source
+  stretchlast=1
+}
+\abcsvgsettings{
+  prelude=\piano,   % our setup for piano
+  M=none,           % no meter
+  L=1/1,            % unit length is a whole note
+  K=C,              % Key is C Major
+}
+% Save the output of abcm2ps into \musicbox
+\begin{abcsvgbox}{\musicbox}
+  [V:D] y[GBdf] | y[B,DFG] | y[DFGB] | y[FGBd] ||
+  [V:G]  x      |  x       |  x      |  x      ||
+  %
+  [V:D] y[DF]   | y[DF]    | y[B,F]  | y[B,D]  |]
+  [V:G]  [G,B,] |  [B,,G,] |  [D,G,] |  [F,G,] |]
+\end{abcsvgbox}
+% annotate this output
+\begin{abcsvgannotate}[%
+   bottom=0.1\height+\baselineskip% leave room at the bottom for 
+                                  % annotations under the staff
+  ]{\musicbox}
+  \rput(0.1,-0.1){\tbox{État fond.}}
+  \rput(0.225,-0.1){\tbox{1\ier renv.}}
+  \rput(0.35,-0.1){\tbox{2\ieme renv.}}
+  \rput(0.48,-0.1){\tbox{3\ieme renv.}}
+  \rput(0.585,-0.1){\tbox{\accord V+7}}
+  \rput(0.705,-0.1){\tbox{\accord V{\not5}6}}
+  \rput(0.83,-0.1){\tbox{\accord V{}{+6}}}
+  \rput(0.94,-0.1){\tbox{\accord V{}{+4}}}
+\end{abcsvgannotate}
+
+\bigskip
+
+\abcsvgsettings{
+  prelude=\choral,
+  M=none,
+  L=1/4,
+  K=C
+}
+\begin{abcsvgbox}{\musicbox}
+  [V:S] y (F  |  F4) E4  || F4  G4 || B4  c4  || B4  c4  |]
+  [V:A] y  C  |  D4  C4  || D4  C4 || F4  E4  || F4  G4  |]
+  [V:T] y  a  | (g4  g4) || b4  g4 || d'4 c'4 || d'4 c'4 |]
+  [V:B] y  f  |  B4  c4  || g4  e4 || g4  c4  || g4  e4  |]
+  %
+\end{abcsvgbox}
+
+\begin{abcsvgannotate}[top=0.2\height,bottom=0.1\height+\baselineskip]{\musicbox}
+  \rput(0.1,1){\pbox{\small préparation}}
+  %
+  \rput(0.23,1){\pbox{\small résolution\\normale}}
+  \thicklines
+  \rput(0.165,0.7){\line(15,-1){35}}
+  %
+  \rput(0.445,1){\pbox{\small résolution\\exceptionnelle}}
+  \rput(0.39,0.69){\line(15,1){34}}
+  \rput(0.39,0.64){\line(9,-8.5){34}}
+  %
+  \rput(0.615,0.78){\line(15,1){34}}
+  \rput(0.615,0.68){\line(15,-1){34}}
+  %
+  \rput(0.84,0.69){\line(15,1){34}}
+  \rput(0.84,0.66){\line(6,-6){34}}
+  %
+  \rput(0.08,-0.1){\tbox{\accord{IV}{}{}}}
+  \rput(0.155,-0.1){\tbox{\accord V{\not5}6}}
+  \rput(0.26,-0.1){\tbox{\accord I{}5}}
+  \rput(0.385,-0.1){\tbox{\accord V+7}}
+  \rput(0.49,-0.1){\tbox{\accord I{}6}}
+  \rput(0.61,-0.1){\tbox{\accord V+7}}
+  \rput(0.714,-0.1){\tbox{\accord I{}5}}
+  \rput(0.835,-0.1){\tbox{\accord V+7}}
+  \rput(0.94,-0.1){\tbox{\accord I{}6}}
+\end{abcsvgannotate}
+
+\medskip
+
+\begin{itemize}
+  \item Résolution normale~: la 7\ieme descend en mouvement conjoint~;
+  \item Résolution exceptionnelle~: la 7\ieme monte en mouvement
+  conjoint, et la basse fait entendre sa résolution normale.
+\end{itemize}
+
+\abcsvgsettings{
+  prelude=\choral,
+  M=none,
+  L=1/4,
+  K=C,
+}
+\abcsvgpdfsettings{
+  stretchlast=0
+}
+
+\begin{abcsvgbox}{\musicbox}
+  [V:S] y  G y F |  F y G  | C y F  ||
+  [V:A] y  D y D |  D y D  | C y B, ||
+  [V:T] y  b y b |  b y b  | a y g  ||
+  [V:B] y  f y g |  g y f  | f y g  ||
+  [V:S][L:1/1] A  F | G  F | E  F ||
+  [V:A][L:1/1] F  D | E  D | C  D ||
+  [V:T][L:1/1] c' b | c' b | g  b ||
+  [V:B][L:1/1] f  g | c  G | c  g ||
+  [V:S][L:1/4] E  D  G2 |]
+  [V:A][L:1/4] C  B, C2 |]
+  [V:T][L:1/4] g  g  g2 |]
+  [V:B][L:1/4] c  f  e2 |]
+\end{abcsvgbox}
+
+\medskip
+
+\begin{abcsvgannotate}[%
+%   grid, % the grid can help placing annotations
+  top=2\baselineskip,
+  bottom=0.1\height+\baselineskip
+  ]{\musicbox}
+  \rput(0.21,1.04){\pbox{%
+    \small mouvements déconseillés entre\\
+    la 7\ieme au soprano et la fondamentale à la basse
+  }}
+  \thicklines
+  \rput(0.085,0.73){\line(15,-1){18}}
+  \rput(0.085,0.3){\line(15,1){18}}
+  \rput(0.145,0.71){\rcrochet{30}}
+  %
+  \rput(0.08,-0.04){\tbox{\accord V{}{+4}}}
+  \rput(0.14,-0.04){\tbox{\accord V+7}}
+  %
+  \rput(0.195,0.72){\line(15,1){18}}
+  \rput(0.195,0.32){\line(15,-1){18}}
+  \rput(0.26,0.74){\rcrochet{35}}
+  %
+  \rput(0.19,-0.04){\tbox{\accord V+7}}
+  \rput(0.25,-0.04){\tbox{\accord V{}{+4}}}
+  %
+  \rput(0.31,0.635){\line(3,1){16}}
+  \rput(0.31,0.27){\line(15,1){16}}
+  %
+  \rput(0.30,-0.04){\tbox{\accord{IV}{}5}}
+  \rput(0.36,-0.04){\tbox{\accord V+7}}
+  %
+  %%%
+  \rput(0.63,1.04){\pbox{%
+    \small mouvement contraire ou direct possible
+  }}
+  \rput(0.45,0.78){\line(8,-1){18}}
+  \rput(0.45,0.24){\line(14,1){18}}
+  %
+  \rput(0.44,-0.04){\tbox{\accord{IV}{}5}}
+  \rput(0.515,-0.04){\tbox{\accord V+7}}
+  %
+  \rput(0.59,-0.04){\tbox{\accord I{}5}}
+  \rput(0.66,-0.04){\tbox{\accord V+7}}
+  %
+  \rput(0.735,-0.04){\tbox{\accord I{}5}}
+  \rput(0.81,-0.04){\tbox{\accord V+7}}
+  %%%
+  \rput(0.92,1.04){\pbox{%
+    \small sans préparation\\(chez Beethoven)
+  }}
+  %
+  \rput(0.875,-0.04){\tbox{\accord I{}5}}
+  \rput(0.92,-0.04){\tbox{\accord V{}{+4}}}
+  \rput(0.96,-0.04){\tbox{\accord I{}6}}
+\end{abcsvgannotate}
+
+On peut enchaîner quinte juste et quinte diminuée. L'inverse n'est pas
+possible, sauf si la basse effectue un mouvement de sixte et de tierce
+parallèle (faux-bourdon) avec deux autres voix~:
+
+\smallskip
+\abcsvgsettings{
+  prelude=\choral,
+  M=none,
+  L=1/1,
+  K=C,
+}
+\begin{abcsvgbox}{\musicbox}
+  [V:S] yy  F  G |]
+  [V:A] yy  B, C |]
+  [V:T] yy  g  g |]
+  [V:B] yy  d  e |]
+\end{abcsvgbox}
+\begin{abcsvgannotate}[%
+%     grid,
+    bottom=0.1\height+\baselineskip
+  ]{\musicbox}
+  \thicklines\sffamily
+  \rput(0.46,0.68){\lcrochet{12}}
+  \rput(0.25,0.55){5\(-\)}
+  \rput(0.85,0.712){\rcrochet{12.5}}
+  \rput(1.05,0.57){5J}
+  \rput(0.58,0.64){\line(1,-1){25}}
+  %
+  \rput(0.55,-0.08){\tbox{\accord V{}{+6}}}
+  \rput(0.80,-0.08){\tbox{\accord I{}6}}
+\end{abcsvgannotate}
+
+Résolution figurée~:
+
+\smallskip
+\abcsvgsettings{
+  prelude=\choral,
+  M=none,
+  L=1/8,
+  K=C,
+}
+\begin{abcsvgbox}{\musicbox}
+  [V:S] y  FG | E4 || B2 | c4 |]
+  [V:A] y  D2 | C4 || FD | E4 |]
+  [V:T] y  b2 | g4 || g2 | g4 |]
+  [V:B] y  g2 | c4 || G2 | c4 |]
+\end{abcsvgbox}
+\begin{abcsvgannotate}[bottom=0.05\height+\baselineskip]{\musicbox}
+  \rput(0.195,-0.05){\tbox{\accord V+7}}
+  \rput(0.285,-0.05){\tbox{(\accord V{}5)}}
+  \rput(0.420,-0.05){\tbox{\accord I{}5}}
+  \rput(0.622,-0.05){\tbox{\accord V+7}}
+  \rput(0.72,-0.05){\tbox{(\accord V{}5)}}
+  \rput(0.842,-0.05){\tbox{\accord I{}5}}
+\end{abcsvgannotate}
+
+\section*{Exercices}
+% Here, we define a new decoration !*!, that draws a star below a note
+% We first define the PostScript procedure that draws the star, then
+% we declare a new decoration that uses this procedure.
+\newtoks\choralwithstar % define a new token register to be used as a prefix
+\choralwithstar=\choral % set it to be the same as our \choral prefix
+\begin{abcsvgmoreprefix}{\choralwithstar} % then, add stuff to it
+  %%beginps
+  /domstar{M -5 -74 RM /Helvetica 24 selectfont(*)show}!
+  %%endps
+  %%deco * 6 domstar 0 0 0 
+\end{abcsvgmoreprefix}
+
+\raisebox{-.5\height}{\textsf{\LARGE*}}~:
+utilisez éventuellement l'accord de 7\ieme de dominante.
+\abcsvgpdfsettings{
+  scale=0.65,   % smaller scale so that all exercises fit on the page
+  linebreak=<EOL>,% obey lines in ABC source
+  stretchlast=1
+}%
+\nopagebreak
+
+\medskip
+\fbox{Ré majeur}\par\nopagebreak
+\abcsvgsettings{
+  prelude=\choralwithstar,
+  M=4/4,
+  L=1/4,
+  K=DMaj,
+}
+\begin{abcsvg}
+  [V:S] dcde | fgfe | dAGF | E2AG | FGAd |
+  s:         | *!*! | **!*!| **!*!|      |
+  [V:A] x4   | x4   | x4   | x4   | x4   |
+  [V:T] x4   | x4   | x4   | x4   | x4   |
+  [V:B] x4   | x4   | x4   | x4   | x4   |
+  [V:S] cd2g-| gfcd | e2AG | FAdc | d4   |]
+  s:    !*!  | !*!  | **!*!|*!*!*!*!|    |
+  [V:A] x4   | x4   | x4   | x4   | x4   |]
+  [V:T] x4   | x4   | x4   | x4   | x4   |]
+  [V:B] x4   | x4   | x4   | x4   | x4   |]
+\end{abcsvg}
+
+\begin{center}
+  \rule{0.3\linewidth}{1pt}
+\end{center}
+
+\fbox{Fa majeur}\par\nopagebreak
+\abcsvgsettings{
+  prelude=\choral,
+  M=4/4,
+  L=1/4,
+  K=FMaj,
+}
+\begin{abcsvgbox}{\musicbox}
+  [V:S] x4      | x4   | x4     | x4   | x4   | x4   | x4     | x4   |]
+  [V:A] x4      | x4   | x4     | x4   | x4   | x4   | x4     | x4   |]
+  [V:T] x4      | x4   | x4     | x4   | x4   | x4   | x4     | x4   |]
+  [V:B] F2 cB   | Acfe | fBc2   | fgac | defA | BcdG | ABc2   | F4   |]
+\end{abcsvgbox}
+\begin{abcsvgannotate}[bottom=0.05\height+\baselineskip]{\musicbox}
+  \rput(0.175,-0.05){\tbox{\accord V{}{+4}}}
+  \rput(0.410,-0.05){\tbox{\accord V+7}}
+  \rput(0.612,-0.05){\tbox{\accord V{\not5}6}}
+  \rput(0.795,-0.05){\tbox{\accord V{}{+6}}}
+  \rput(0.900,-0.05){\tbox{\accord V+7}}
+\end{abcsvgannotate}
+
+\begin{center}
+  \rule{0.3\linewidth}{1pt}
+\end{center}
+
+\fbox{La majeur}\par\nopagebreak
+\abcsvgsettings{
+  prelude=\choralwithstar,
+}
+% In this example, we set the meter, note length and key in the ABC 
+% source, not with \abcsettings, just to show that it is still 
+% possible
+\begin{abcsvg}
+  M:4/4
+  L:1/4
+  K:Amaj
+  [V:S] AGAE | cBAG | Acdc | BAG2 | Afed |
+  s:         |***!*!|      |**!*! |***!*!|
+  [V:A] x4   | x4   | x4   | x4   | x4   |
+  [V:T] x4   | x4   | x4   | x4   | x4   |
+  [V:B] x4   | x4   | x4   | x4   | x4   |
+  %
+  [V:S] cdeA | dcB2 | AEFE-| EDCE | AdcB | A4 |]
+  s:         | **!*!|      | !*!  |***!*!|    |
+  [V:A] x4   | x4   | x4   | x4   | x4   | x4 |]
+  [V:T] x4   | x4   | x4   | x4   | x4   | x4 |]
+  [V:B] x4   | x4   | x4   | x4   | x4   | x4 |]
+\end{abcsvg}
+
+\begin{center}
+  \rule{0.3\linewidth}{1pt}
+\end{center}
+
+\choralwithstar=\choral
+\begin{abcsvgmoreprefix}{\choralwithstar}
+  %%beginps
+  /domstar{M -5 47 RM /Helvetica 24 selectfont(*)show}!
+  %%endps
+  %%deco * 6 domstar 0 0 0 
+\end{abcsvgmoreprefix}
+\fbox{Mi majeur}\par\nopagebreak
+\abcsvgsettings{
+  prelude=\choralwithstar,
+}
+\begin{abcsvg}
+  M:4/4
+  L:1/4
+  K:Emaj
+  [V:S] x4   | x4   | x4   | x4   | x4   | x4   |
+  [V:A] x4   | x4   | x4   | x4   | x4   | x4   |
+  [V:T] x4   | x4   | x4   | x4   | x4   | x4   |
+  [V:B] e2BA | GBef | gaba | g2fd | eABG | AGFE |
+  s:    **!*!|      |***!*!|      |**!*! |      |
+  %
+  [V:S] x4   | x4   | x4   | x4   | x4   | x4   |]
+  [V:A] x4   | x4   | x4   | x4   | x4   | x4   |]
+  [V:T] x4   | x4   | x4   | x4   | x4   | x4   |]
+  [V:B] BAGB | edec | B2ba | gbea | g2fB | e4   |]
+  s:    *!*! | *!*! | **!*!|*!*!*!*!|*!*!!*!|   |
+\end{abcsvg}
+
+\end{document}

@@ -4,18 +4,20 @@
 # Process an ABC file with abc2svg toabc.js. Useful when the source file 
 # contains conditional statements.
 #
-# abc2svgabc <abc_src_file> <abc_dst_file>
+# abc2svgabc <abc_src_file> <abc_dst_file> [<options>]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
 
-if [ ! $# -eq 2 ]
+if [ ! $# -ge 2 ]
 then
-  echo "# Usage: $0 abc_file dst_abc_file"
+  echo "# Usage: $0 abc_file dst_abc_file [<options>]"
   exit 1
 fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
+output="$2"
+shift 2
 cd "$directory"
-abc2svg toabc.js "${filename}.abc" > "$2"
+abc2svg toabc.js "$@" "${filename}.abc" > "$output"

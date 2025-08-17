@@ -4,7 +4,7 @@
 # Convert an ABC file into an HTML file with dynamic rendering and playback 
 # of the score, using abc2svg
 #
-# abc2svgweb <abc_file> [<html_file>] [<abc2svg_script_url>]
+# abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>] [-s <ss-pref_chars>]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
@@ -23,9 +23,12 @@ abc2svgurl="../abc2svg"
 # abc2svgscripts="abcweb-1.js snd-1.js follow-1.js"
 abc2svgscripts="abcweb-1.js snd-1.js"
 
+## Default characters for format lines
+sspref="%"
+
 if [ $# -lt 1 ]
 then
-  echo "# Usage: abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>]"
+  echo "# Usage: abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>] [-s <ss-pref_chars>]"
   echo "#        Converts an ABC music file into a web page, with MIDI rendering"
   echo "#        and refering to individual abc2svg script from the given URL."
   exit 1
@@ -42,6 +45,9 @@ do
   ;;
   "-u" )
     abc2svgurl="$2"
+  ;;
+  "-s" )
+  	sspref="$2"
   ;;
   *)
     echo "# Unrecognized option: $1 $2"
@@ -102,6 +108,11 @@ ENDOFSTYLE
 
 echo "<title>${filename}</title>" >> "${outfile}"
 echo "</head>\n<body>\n<script type=\"text/vnd.abc\" class=\"abc\">" >> "${outfile}"
+
+if [ ! "${sspref}" = "%" ]
+then
+  echo "%%ss-pref ${sspref}" >> "${outfile}"
+fi
 
 # Process includes and put the correct modification date in headers and footers
 abcflatten "${filename}.abc" \

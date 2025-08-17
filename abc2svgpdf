@@ -9,17 +9,18 @@
 #
 ##################################################################################
 
-if [ $# -ne 1 ]
+if [ $# -lt 1 ]
 then
-	echo "# Usage: $0 abc_file"
+	echo "# Usage: $0 abc_file [<options>]"
 	echo "# Gives a PDF rendering of the tunes of an abc_file"
 	exit 1
 fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
+shift
 cd "$directory"
 abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
-abctopdf "${filename}_tmp$$.abc" -o "${filename}.pdf"
+abctopdf "$@" "${filename}_tmp$$.abc" -o "${filename}.pdf"
 rm "${filename}_tmp$$.abc"
 
 ## Can be used in BBEdit with the following OSA script in the Scripting folder

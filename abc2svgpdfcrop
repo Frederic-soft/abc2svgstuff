@@ -3,16 +3,22 @@
 #
 # Convert an ABC file to PDF cropped at its natural size.
 #
-# abc2svgpdfcrop <abc_file>
+# abc2svgpdfcrop <abc_file> [<options>]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-
+if [ $# -lt 1 ]
+then
+	echo "# Usage: $0 abc_file [<options>]"
+	echo "# Converts an ABC file to PDF cropped at its natural size"
+	exit 1
+fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
+shift
 cd "$directory"
 abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
-abctopdf "${filename}_tmp$$.abc" -o "${filename}_tmp$$.pdf"
+abctopdf "$@" "${filename}_tmp$$.abc" -o "${filename}_tmp$$.pdf"
 pdfcrop "${filename}_tmp$$.pdf" "${filename}.pdf"
 rm "${filename}_tmp$$.abc" "${filename}_tmp$$.pdf"

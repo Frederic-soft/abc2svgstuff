@@ -1,0 +1,26 @@
+
+         ABCSVGinTeX
+
+abcsvgintex is a LaTeX package for using inline ABC music to create scores in 
+a LaTeX document.
+
+ABC music found in an "abc" environment is written to an ABC temporary 
+source file which is converted to PDF before being inserted in your document.
+
+This is still an experimental package, and you will find the documentation 
+at the beginning of abcsvgintex.sty. You may also play with example1.tex and 
+example2.tex in folder "examples" to get a better understanding of how 
+abcintex works.
+
+abcsvgintex uses the \write18 command to convert ABC files, so you must use a 
+TeX engine that supports this trick, and enable it (with the -shell-escape 
+option for TeX live or MacTeX for instance). Its default configuration uses abc2svg
+and abc2midi or MuseScore to process ABC files. It relies on some shell scripts that
+are available at: https://github.com/Frederic-soft/abc2svgstuff
+
+abcsvgintex uses a special version of keyval named keyvalx.sty that allows the 
+definition of a default processing for unknown keys in options.
+
+Frédéric Boulanger.
+
+2025-08-17 frederic.softdev@gmail.com

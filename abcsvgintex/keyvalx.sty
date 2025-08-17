@@ -1,0 +1,101 @@
+%% -*-TeX-*-
+ % ###################################################################
+ % 
+ %  FILE: "keyvalx.sty"
+ %                                    created: 2005-02-03 14:54:13 
+ %                                last update: 2024-01-23 17:07:58 
+ %  Author: Frederic Boulanger
+ %  E-mail: frederic.boulanger@centralesupelec.fr
+ %    mail: CentraleSupélec - Département Informatique
+ %          3 rue Joliot-Curie, 91192 Gif-sur-Yvette, France
+ %     www: http://wdi.centralesupelec.fr/boulanger/
+ %  
+ %  Description: 
+ %  
+ %  keyval with possible default processing for unknown keys
+ % 
+ %  History
+ % 
+ %  modified   by  rev reason
+ %  ---------- --- --- -----------
+ %  2008-01-09 FBO 1.0 original
+ %  2024-01-23 FBO 1.1 update to keyval v1.15
+ % ###################################################################
+ %%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{keyvalx}
+                 [2024/01/23 v1.1 enhanced key=value parser (FBO)]
+\long\def\setkeys#1#2{%
+  \def\KV@prefix{KV@#1@}%
+  \let\@tempc\relax
+  \KV@do#2,\relax,}
+\long\def\KV@do#1,{%
+ \ifx\relax#1\@empty\else
+  \KV@split#1==\relax
+  \expandafter\KV@do\fi}
+\long\def\KV@split#1=#2=#3\relax{%
+  \KV@@sp@def\@tempa{#1}%
+  \ifx\@tempa\@empty\else
+    \expandafter\let\expandafter\@tempc
+      \csname\KV@prefix\@tempa\endcsname
+    \ifx\@tempc\relax
+      \expandafter\let\expandafter\@tempc
+        \csname\KV@prefix @default@handler\endcsname
+      \ifx\@tempc\relax
+        \KV@errx
+         {\@tempa\space undefined}%
+       \else
+         \KV@@sp@def\@tempb{#2}%
+         \expandafter\def\expandafter\@tempd\expandafter{\expandafter\@tempc\expandafter{\@tempa}}%
+         \expandafter\@tempd\expandafter{\@tempb}\relax
+       \fi
+    \else
+      \ifx\@empty#3\@empty
+        \KV@default
+      \else
+        \KV@@sp@def\@tempb{#2}%
+        \expandafter\@tempc\expandafter{\@tempb}\relax
+      \fi
+    \fi
+  \fi}
+\def\KV@default{%
+  \expandafter\let\expandafter\@tempb
+    \csname\KV@prefix\@tempa @default\endcsname
+  \ifx\@tempb\relax
+    \KV@err{No value specified for \@tempa}%
+  \else
+    \@tempb\relax
+  \fi}
+\DeclareOption{unknownkeysallowed}{%
+  \def\KV@errx#1{\PackageInfo{keyval}{#1}}}
+\DeclareOption{unknownkeyserror}{%
+  \def\KV@errx#1{\PackageError{keyval}{#1}\@ehc}}
+\ExecuteOptions{unknownkeyserror}
+\let\KV@err\KV@errx
+\ProcessOptions
+\def\@tempa#1{%
+\long\def\KV@@sp@def##1##2{%
+  \futurelet\KV@tempa\KV@@sp@d##2\@nil\@nil#1\@nil\relax##1}%
+\def\KV@@sp@d{%
+  \ifx\KV@tempa\@sptoken
+    \expandafter\KV@@sp@b
+  \else
+    \expandafter\KV@@sp@b\expandafter#1%
+  \fi}%
+\long\def\KV@@sp@b#1##1 \@nil{\KV@@sp@c##1}%
+  }
+\@tempa{ }
+\long\def\KV@@sp@c#1\@nil#2\relax#3{\KV@toks@{#1}\edef#3{\the\KV@toks@}}
+\newtoks\KV@toks@
+\def\define@key#1#2{%
+  \@ifnextchar[{\KV@def{#1}{#2}}{\long\@namedef{KV@#1@#2}####1}}
+\def\KV@def#1#2[#3]{%
+  \long\@namedef{KV@#1@#2@default\expandafter}\expandafter
+    {\csname KV@#1@#2\endcsname{#3}}%
+  \long\@namedef{KV@#1@#2}##1}
+\def\default@key#1#2{%
+  \@namedef{KV@#1@@default@handler}{#2}%
+}
+\endinput
+%%
+%% End of file `keyval.sty'.

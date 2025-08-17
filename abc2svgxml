@@ -3,7 +3,7 @@
 #
 # Convert an ABC file into a MusicXML file, using abc2svg and abc2xml
 #
-# abc2svgxml <abc_file> [<xml_file_base>]
+# abc2svgxml <abc_file> [-o <xml_file_base>] [-s <ss-pref_chars>] [-real_sound <0|1>]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
@@ -11,31 +11,59 @@
 
 if [ $# -lt 1 ]
 then
-  echo "# Usage: abc2svgxml <abc_file> [<xml_file_base>]"
+  echo "# Usage: abc2svgxml <abc_file> [-o <xml_file_base>] [-s <ss-pref_chars>] [-real_sound <0|1>]"
   echo "#        Converts an ABC music file into as many MusicXML files as there are tunes in it."
   echo "#        <xml_file_base> is the optional base name of the generated files."
   exit 1
 fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
+shift
 cd "$directory"
 xml_base="$filename"
-if [ $# -gt 1 ]
+sspref="%"
+realsound="0"
+while [ $# -ge 2 ]
+do
+  case $1 in
+  "-o" )
+    xml_base="$2"
+  ;;
+  "-s" )
+  	sspref="$2"
+  ;;
+  "-real_sound" )
+  	realsound="$2"
+  ;;
+  *)
+    echo "# Unrecognized option: $1 $2"
+    exit 1
+  ;;
+  esac
+  shift 2
+done
+if [ $# -ge 1 ]
 then
-  xml_base="$2"
+  echo "# Uncomplete or unrecognized option: $1"
+  exit 1
 fi
+
 abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' | abcrmtext > "${filename}_flat$$.abc"
+# X: indices of the tunes in the file
 tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
+# Index of the tune in the file, regardless of the value of the "X:" fields.
+idx=1
 for t in $tunes
 do
-  echo "Processing tune X:${t}"
-  abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" > "${filename}_${t}.abc"
-  abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" \
+  echo "Processing tune X:${t}/${idx}"
+#  abc2svg toabc.js  --select X:$t "${filename}_flat$$.abc" > "${filename}_${idx}.abc"
+  abc2svg toabc.js --ss-pref ${sspref} --select X:$t --sounding-score ${realsound} "${filename}_flat$$.abc" \
     | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
     | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
     | sed -e 's/\$$//' \
-    | sed -e '/^$/d' > "${filename}_${t}.abc"
-  abc2xml "${filename}_${t}.abc" > "${xml_base}_${t}.musicxml"
-  rm -f "${filename}_${t}.abc"
+    | sed -e '/^$/d' > "${filename}_${idx}.abc"
+  abc2xml "${filename}_${idx}.abc" > "${xml_base}_${idx}.musicxml"
+  rm -f "${filename}_${idx}.abc"
+  idx=`expr ${idx} + 1`
 done
 rm -f "${filename}_flat$$.abc"

@@ -8,37 +8,43 @@
 # The produced MIDI files sound at the right pitch because the transposition
 # information is processed by abc2svg before processing by abc2midi.
 #
-# abc2svgmidi <abc_file>
+# abc2svgmidi <abc_file> [<midi_file_base> [<options>]]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-if [ $# -ne 1 ]
+if [ $# -lt 1 ]
 then
-	echo "# Usage: $0 abc_file [<midi_file_base>]"
+	echo "# Usage: $0 abc_file [<midi_file_base> [<options>]]"
 	echo "# Gives a MIDI rendering of each tune of an abc_file"
 	echo "# <midi_file_base> is the optional base name of the generated files."
 	exit 1
 fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
+shift
 cd "$directory"
 midi_base="$filename"
-if [ $# -gt 1 ]
+if [ $# -ge 1 ]
 then
-  midi_base="$2"
+  midi_base="$1"
+  shift
 fi
 # Escape \n as \\\\n so that abc2svg toabc.js does not expand it
 abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' > "${filename}_flat$$.abc"
+# X: indices of the tunes in the file
 tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
+# Index of the tune in the file, regardless of the value of the "X:" fields.
+idx=1
 for t in $tunes
 do
-  echo "Processing tune $t"
-  abc2svg toabc.js  --select X:$t --sounding-score 1 "${filename}_flat$$.abc" \
+  echo "Processing tune X:${t}/${idx}"
+  abc2svg toabc.js  "$@" --select X:$t --sounding-score 1 "${filename}_flat$$.abc" \
     | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
     | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
-    | sed -e 's/\$$//' > "${filename}_${t}.abc"
-  abc2midi "${filename}_${t}.abc" -o "${midi_base}_${t}.mid"
-  rm -f "${filename}_${t}.abc"
+    | sed -e 's/\$$//' > "${filename}_${idx}.abc"
+  abc2midi "${filename}_${idx}.abc" -o "${midi_base}_${idx}.mid"
+  rm -f "${filename}_${idx}.abc"
+  idx=`expr ${idx} + 1`
 done
 rm -f "${filename}_flat$$.abc"
