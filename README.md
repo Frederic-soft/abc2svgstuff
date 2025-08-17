@@ -12,6 +12,7 @@ Requires `coreutils` (for `realpath`):
 * The ABC notation standard <http://abcnotation.com/wiki/abc:standard:v2.2>
 
 ## Explanations
+* `abcsvgintex` contains a LaTeX package to include ABC notation in LaTeX documents.
 * `Makefile.abc2svg` is a Makefile that you can use to convert ABC files to PDF, static or dynamic HTML, MIDI, and MusicXML.
   It relies only on an installation of abc2svg and the abcflatten and abcrmtext scripts.
 * `abc2svg` is a wrapper script for using abc2svg with node when it is not installed by npm
