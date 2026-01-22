@@ -1,0 +1,57 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file into a web page, a PDF file, a MusicXML file and a MuseScore file, 
+# using abc2svg, abc2xml, and mscore
+#
+# abc2svgbuild <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+
+if [ $# -lt 1 ]
+then
+  echo "# Usage: abc2svgbuild <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]"
+  echo "#        Converts an ABC music file into html, PDF, XML and MuseScore files."
+  echo "#        If real_sound is 1, the XML and MuseScore file will correspond to the sounding pitch."
+  exit 1
+fi
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+name="${filename}.abc"
+shift
+cd "$directory"
+sspref="%"
+realsound="0"
+while [ $# -ge 2 ]
+do
+  case $1 in
+  "-s" )
+  	sspref="$2"
+  ;;
+  "-real_sound" )
+  	realsound="$2"
+  ;;
+  *)
+    echo "# Unrecognized option: $1 $2"
+    exit 1
+  ;;
+  esac
+  shift 2
+done
+if [ $# -ge 1 ]
+then
+  echo "# Uncomplete or unrecognized option: $1"
+  exit 1
+fi
+
+echo "abc2svgweb \"${name}\" -s ${sspref}"
+abc2svgweb "${name}" -s ${sspref}
+echo "abc2svgpdf \"${name}\""
+abc2svgpdf "${name}"
+echo "abc2svgxml \"${name}\" -s %M -real_sound ${realsound} $@"
+abc2svgxml "${name}" -s %M -real_sound ${realsound} $@
+mscore -o "${filename}.mscz" "${filename}_1.musicxml"
+rm -f "${filename}_1.musicxml"
+mscore -o "${filename}.musicxml" "${filename}.mscz"
