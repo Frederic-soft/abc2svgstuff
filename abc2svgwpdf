@@ -1,0 +1,38 @@
+#!/bin/sh
+##################################################################################
+#
+# Convert an ABC file to PDF using abc2svg through Google Chrome JS interpreter.
+#
+# abc2svgwpdf <abc_file>
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+BROWSER=google-chrome
+
+print() {
+	echo "# Converting $1 to PDF using $BROWSER"
+	$BROWSER --headless --print-to-pdf="$1.pdf" \
+		--no-pdf-header-footer \
+		--no-sandbox \
+		--no-margins \
+		--disable-gpu \
+		"$1.html"
+}
+
+if [ $# -lt 1 ]
+then
+	echo "# Usage: $0 abc_file [<options>]"
+	echo "# Gives a PDF rendering of the tunes of an abc_file"
+	exit 1
+fi
+directory=`dirname "$1"`
+filename=`basename "$1" ".abc"`
+shift
+cd "$directory"
+if [ ! -r "${filename}.html" ]
+then
+	echo "# Generating HTML from ${filename}.abc"
+	abc2svgweb "${filename}.abc"
+fi
+print "${filename}"
