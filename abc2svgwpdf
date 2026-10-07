@@ -10,14 +10,18 @@
 ##################################################################################
 BROWSER=google-chrome
 
+# The --virtual-time-budget=10000 option helps to avoid problems with the rendering of fonts
 print() {
-	echo "# Converting $1 to PDF using $BROWSER"
-	$BROWSER --headless --print-to-pdf="$1.pdf" \
+	echo "# Converting ${1} to PDF using ${BROWSER}"
+	${BROWSER} \
+	    --headless \
+	    --virtual-time-budget=10000 \
 		--no-pdf-header-footer \
 		--no-sandbox \
 		--no-margins \
 		--disable-gpu \
-		"$1.html"
+		--print-to-pdf="${1}.pdf" \
+		"${1}.html"
 }
 
 if [ $# -lt 1 ]
@@ -29,7 +33,7 @@ fi
 directory=`dirname "$1"`
 filename=`basename "$1" ".abc"`
 shift
-cd "$directory"
+cd "${directory}"
 if [ ! -r "${filename}.html" ]
 then
 	echo "# Generating HTML from ${filename}.abc"
