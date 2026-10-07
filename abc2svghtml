@@ -1,34 +1,56 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file into an HTML file with static rendering of the score, using abc2svg
+# Convert an ABC file into an HTML file with static rendering of the score
+# (no JavaScript required), using abc2svg tohtml.js.
 #
-# abc2svghtml <abc_file> [<output_file> [<options>]]
+#   abc2svghtml <abc_file> [<output_file> [<options>]]
+#
+# By default, the output file is written next to the ABC file. An explicit
+# <output_file> is relative to the current directory.
+#
+# On macOS, the page is then reloaded in Google Chrome (or opened in a new
+# window). Set ABC2SVG_NO_REFRESH=1 to disable this.
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
+if [ $# -lt 1 ]
+then
+  echo "# Usage: $PROG <abc_file> [<output_file> [<options>]]"
+  echo "# Gives a static HTML rendering of the tunes of an abc_file"
+  exit 1
+fi
+src=$1
 shift
+outfile=
 if [ $# -ge 1 ]
 then
-  outfile="$1"
+  outfile=$(abspath "$1")
   shift
-else
-  outfile="${filename}.html"
 fi
-cd "$directory"
-abcflatten "${filename}.abc" > "${filename}_flat$$.abc"
-abc2svg tohtml.js "$@" "${filename}_flat$$.abc" | sed -e "s!<title>[^<]*</title>!<title>${filename}</title>!" > "${outfile}"
-rm -f "${filename}_flat$$.abc"
-url="file://`pwd`/${outfile}"
+abc_source "$src"
+[ -n "$outfile" ] || outfile=$SRC_DIR/$SRC_NAME.html
+make_tmpdir
+abc_flatten "$SRC" "$TMPD/s/$SRC"
+abc2svg_run tohtml.js "$@" "$TMPD/s/$SRC" > "$TMPD/out.html" || die "abc2svg failed on $SRC"
+# Use the name of the ABC file as title (escape the characters special for sed)
+title=$(printf '%s\n' "$SRC_NAME" | sed -e 's/[\\&!]/\\&/g')
+sed -e "s!<title>[^<]*</title>!<title>${title}</title>!" "$TMPD/out.html" > "$outfile"
 
-# This part works only on MacOS
+# This part works only on macOS
 # It tries to refresh the HTML file in Google Chrome if it is already open.
-if [ "`which osascript`" != "" ]
+if [ -z "${ABC2SVG_NO_REFRESH:-}" ] && command -v osascript >/dev/null 2>&1
 then
+url="file://$outfile"
 # Look for a tab displaying our file in one of Chrome's windows
 # If found, just reload this tab
 # Else, create a new window and load our file in its main tab.

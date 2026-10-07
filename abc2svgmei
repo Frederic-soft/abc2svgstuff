@@ -2,21 +2,48 @@
 ##################################################################################
 #
 # Convert an ABC file to MEI using abc2svg. An MEI file is produced for each
-# tune in the ABC file, the names are obtained by suffixing the ABC file name 
-# with an underscore followed by the number of the tune.
+# tune in the ABC file, the names are obtained by suffixing the ABC file name
+# with an underscore followed by the number (X: field) of the tune.
+# The MEI files are written next to the ABC file.
 #
-# abc2svgmei <abc_file>
+#   abc2svgmei <abc_file> [<tomei_options>]
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
-cd "$directory"
-tunes=`abcflatten "${filename}.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
-for t in $tunes
+if [ $# -lt 1 ]
+then
+  echo "# Usage: $PROG <abc_file> [<options>]"
+  echo "# Converts each tune of an abc_file to MEI"
+  exit 1
+fi
+abc_source "$1"
+shift
+make_tmpdir
+abc_flatten "$SRC" "$TMPD/all.abc"
+ntunes=$(abc_tune_count "$TMPD/all.abc")
+[ "$ntunes" -gt 0 ] || die "no tune (X: field) in $SRC"
+idx=1
+seen=
+while [ "$idx" -le "$ntunes" ]
 do
-  echo "Processing tune $t"
-  abc2svg tomei.js "${filename}.abc" --select X:$t > "${filename}_${t}.mei"
+  x=$(abc_tune_x "$TMPD/all.abc" "$idx")
+  echo "Processing tune X:${x}"
+  abc_tune "$TMPD/all.abc" "$idx" > "$TMPD/s/$SRC"
+  abc2svg_run tomei.js "$@" "$TMPD/s/$SRC" > "$TMPD/out.mei" </dev/null \
+    || die "abc2svg failed on tune X:${x}"
+  case " $seen " in
+    *" $x "*) warn "several tunes with X:${x}, ${SRC_NAME}_${x}.mei is overwritten" ;;
+  esac
+  seen="$seen $x"
+  cp "$TMPD/out.mei" "${SRC_NAME}_${x}.mei" || die "cannot write ${SRC_NAME}_${x}.mei"
+  idx=$((idx + 1))
 done

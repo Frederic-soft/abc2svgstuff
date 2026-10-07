@@ -1,42 +1,75 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file to PDF using abc2svg through Google Chrome JS interpreter.
+# Convert an ABC file to PDF using abc2svg through Google Chrome JS interpreter
+# and PDF rendering engine. The HTML page is (re)generated with abc2svgweb when
+# it does not exist or when it is older than the ABC file or one of its includes.
 #
-# abc2svgwpdf <abc_file>
+#   abc2svgwpdf <abc_file> [<abc2svgweb_options>]
+#
+# Environment: BROWSER  Chrome/Chromium command (default: google-chrome,
+#                       chromium or the Google Chrome application on macOS)
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-BROWSER=google-chrome
-
-# The --virtual-time-budget=10000 option helps to avoid problems with the rendering of fonts
-print() {
-	echo "# Converting ${1} to PDF using ${BROWSER}"
-	${BROWSER} \
-	    --headless \
-	    --virtual-time-budget=10000 \
-		--no-pdf-header-footer \
-		--no-sandbox \
-		--no-margins \
-		--disable-gpu \
-		--print-to-pdf="${1}.pdf" \
-		"${1}.html"
-}
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
 if [ $# -lt 1 ]
 then
-	echo "# Usage: $0 abc_file [<options>]"
-	echo "# Gives a PDF rendering of the tunes of an abc_file"
-	exit 1
+  echo "# Usage: $PROG <abc_file> [<abc2svgweb_options>]"
+  echo "# Gives a PDF rendering of the tunes of an abc_file"
+  exit 1
 fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
-shift
-cd "${directory}"
-if [ ! -r "${filename}.html" ]
+
+if [ -z "${BROWSER:-}" ]
 then
-	echo "# Generating HTML from ${filename}.abc"
-	abc2svgweb "${filename}.abc"
+  for b in google-chrome chromium chromium-browser \
+           "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  do
+    if command -v "$b" >/dev/null 2>&1 || [ -x "$b" ]
+    then
+      BROWSER=$b
+      break
+    fi
+  done
+  [ -n "${BROWSER:-}" ] || die "Chrome not found, set BROWSER"
 fi
-print "${filename}"
+
+abc_source "$1"
+shift
+html="$SRC_NAME.html"
+# Is the HTML page missing or older than one of the ABC files?
+stale=
+if [ -f "$html" ]
+then
+  stale=$(sh "$STUFFDIR/abcflatten" -l "$SRC" | while IFS= read -r f
+          do
+            [ "$f" -nt "$html" ] && echo "$f"
+          done)
+else
+  stale=yes
+fi
+if [ -n "$stale" ]
+then
+  echo "# Generating HTML from ${SRC}"
+  sh "$STUFFDIR/abc2svgweb" "$SRC" "$@" || exit 1
+fi
+
+# The --virtual-time-budget=10000 option helps to avoid problems with the rendering of fonts
+echo "# Converting ${html} to PDF using ${BROWSER}"
+"$BROWSER" \
+  --headless \
+  --virtual-time-budget=10000 \
+  --no-pdf-header-footer \
+  --no-sandbox \
+  --no-margins \
+  --disable-gpu \
+  --print-to-pdf="$SRC_DIR/$SRC_NAME.pdf" \
+  "$SRC_DIR/$html"

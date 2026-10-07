@@ -1,23 +1,33 @@
 #!/bin/sh
 ##################################################################################
 #
-# Process an ABC file with abc2svg toabc.js. Useful when the source file 
-# contains conditional statements.
+# Process an ABC file with abc2svg toabc.js, after processing its includes.
+# Useful when the source file contains conditional statements.
 #
-# abc2svgabc <abc_src_file> <abc_dst_file> [<options>]
+#   abc2svgabc <abc_src_file> <abc_dst_file> [<options>]
+#
+# <abc_dst_file> is relative to the current directory.
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-if [ ! $# -ge 2 ]
+if [ $# -lt 2 ]
 then
-  echo "# Usage: $0 abc_file dst_abc_file [<options>]"
+  echo "# Usage: $PROG <abc_file> <dst_abc_file> [<options>]"
   exit 1
 fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
-output="$2"
+output=$(abspath "$2")
+abc_source "$1"
 shift 2
-cd "$directory"
-abc2svg toabc.js "$@" "${filename}.abc" > "$output"
+make_tmpdir
+abc_flatten "$SRC" "$TMPD/s/$SRC"
+abc2svg_run toabc.js "$@" "$TMPD/s/$SRC" > "$TMPD/out.abc" || die "abc2svg failed on $SRC"
+cp "$TMPD/out.abc" "$output"

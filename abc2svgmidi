@@ -1,50 +1,70 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file to MIDI using abc2svg and abc2midi. A MIDI file is produced 
-# for each tune in the ABC file, the names are obtained by suffixing the ABC file 
-# name with an underscore followed by the number of the tune.
+# Convert an ABC file to MIDI using abc2svg and abc2midi. A MIDI file is produced
+# for each tune in the ABC file, the names are obtained by suffixing the ABC file
+# name with an underscore followed by the index of the tune in the file
+# (from 1, regardless of the X: fields).
 #
 # The produced MIDI files sound at the right pitch because the transposition
 # information is processed by abc2svg before processing by abc2midi.
 #
-# abc2svgmidi <abc_file> [<midi_file_base> [<options>]]
+#   abc2svgmidi <abc_file> [<midi_file_base> [<toabc_options>]]
+#
+# By default, the MIDI files are written next to the ABC file. An explicit
+# <midi_file_base> is relative to the current directory.
+#
+# Environment: ABC2MIDI  abc2midi command (default: abc2midi)
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
+
 if [ $# -lt 1 ]
 then
-	echo "# Usage: $0 abc_file [<midi_file_base> [<options>]]"
-	echo "# Gives a MIDI rendering of each tune of an abc_file"
-	echo "# <midi_file_base> is the optional base name of the generated files."
-	exit 1
+  echo "# Usage: $PROG <abc_file> [<midi_file_base> [<options>]]"
+  echo "# Gives a MIDI rendering of each tune of an abc_file"
+  echo "# <midi_file_base> is the optional base name of the generated files."
+  exit 1
 fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
+ABC2MIDI=${ABC2MIDI:-abc2midi}
+command -v "$ABC2MIDI" >/dev/null 2>&1 || die "$ABC2MIDI not found"
+src=$1
 shift
-cd "$directory"
-midi_base="$filename"
+midi_base=
 if [ $# -ge 1 ]
 then
-  midi_base="$1"
+  midi_base=$(abspath "$1")
   shift
 fi
+abc_source "$src"
+[ -n "$midi_base" ] || midi_base=$SRC_DIR/$SRC_NAME
+mkdir -p "$(dirname "$midi_base")" || die "cannot create the directory of $midi_base"
+make_tmpdir
+abc_flatten "$SRC" "$TMPD/flat.abc"
 # Escape \n as \\\\n so that abc2svg toabc.js does not expand it
-abcflatten "${filename}.abc" | sed -e 's/\\n/\\\\\\\\n/g' > "${filename}_flat$$.abc"
-# X: indices of the tunes in the file
-tunes=`cat "${filename}_flat$$.abc" | grep '^X:' | sed -e 's/X:\([0-9]*\).*$/\1/'`
-# Index of the tune in the file, regardless of the value of the "X:" fields.
+sed -e 's/\\n/\\\\\\\\n/g' "$TMPD/flat.abc" > "$TMPD/all.abc"
+ntunes=$(abc_tune_count "$TMPD/all.abc")
+[ "$ntunes" -gt 0 ] || die "no tune (X: field) in $SRC"
 idx=1
-for t in $tunes
+while [ "$idx" -le "$ntunes" ]
 do
-  echo "Processing tune X:${t}/${idx}"
-  abc2svg toabc.js  "$@" --select X:$t --sounding-score 1 "${filename}_flat$$.abc" \
-    | sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
-    | sed -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
-    | sed -e 's/\$$//' > "${filename}_${idx}.abc"
-  abc2midi "${filename}_${idx}.abc" -o "${midi_base}_${idx}.mid"
-  rm -f "${filename}_${idx}.abc"
-  idx=`expr ${idx} + 1`
+  x=$(abc_tune_x "$TMPD/all.abc" "$idx")
+  echo "Processing tune X:${x}/${idx}"
+  abc_tune "$TMPD/all.abc" "$idx" > "$TMPD/s/$SRC"
+  abc2svg_run toabc.js "$@" --sounding-score 1 "$TMPD/s/$SRC" > "$TMPD/toabc.abc" </dev/null \
+    || die "abc2svg failed on tune X:${x}"
+  sed -e 's/^%%linebreak \$$/%%linebreak <EOL>/' \
+      -e 's/I:linebreak \$$/I:linebreak <EOL>/' \
+      -e 's/\$$//' "$TMPD/toabc.abc" > "$TMPD/s/${SRC_NAME}_${idx}.abc"
+  "$ABC2MIDI" "$TMPD/s/${SRC_NAME}_${idx}.abc" -o "${midi_base}_${idx}.mid" </dev/null \
+    || die "abc2midi failed on tune X:${x}"
+  idx=$((idx + 1))
 done
-rm -f "${filename}_flat$$.abc"

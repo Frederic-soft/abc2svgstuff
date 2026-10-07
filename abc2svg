@@ -1,17 +1,19 @@
 #!/bin/sh
 ##################################################################################
 #
-# A wrapper to run abc2svg with node when it is not installed with npm
+# A wrapper to run abc2svg with node (abcnode) wherever abc2svg is installed.
+#
+#   abc2svg [<script.js>] [<options>] <abc_file> ...
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-# Path to the directory containing the "abc2svg" installation directory
-# It plays the same role as the node_modules directory
-ME=`realpath $0`
-CURDIR=`dirname ${ME}`
-ABC2SVGDIR=`realpath "${CURDIR}/.."`
-## 
-## env NODE_PATH=${ABC2SVGDIR} node ${ABC2SVGDIR}/abc2svg/abc2svg-1 "$@"
-${ABC2SVGDIR}/abc2svg/abcnode "$@"
+abc2svg_run "$@"

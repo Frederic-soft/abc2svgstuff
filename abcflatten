@@ -1,46 +1,183 @@
-#!/bin/zsh
+#!/bin/sh
 ##################################################################################
 #
-# Flatten an ABC file, processing abc-include directives (first level only).
-# Computes the most recent modification date of the includes, and replaces
-# the $d variable with it in the header and footer.
+# Flatten an ABC file: replace include directives by the contents of the
+# included files, recursively.
 #
-# abcflatten <abc_file>
+#   abcflatten [-l | -M <targets>] <abc_file>
+#
+#   (default)     print the flattened file on standard output. In %%header and
+#                 %%footer lines, $d is replaced by the most recent modification
+#                 date of the file and of all the files it includes.
+#   -l            list the file and all the files it includes, one per line.
+#   -M <targets>  print a make rule "<targets>: <abc_file> <includes>", plus an
+#                 empty rule for each included file (like gcc -MP).
+#
+# Recognized directives: %%abc-include, I:abc-include and #include, followed by
+# a file name, optionally between double quotes, optionally followed by a
+# % comment.
+# An included file is searched relative to the directory of the file that
+# includes it, then relative to the directory of <abc_file>, then in the
+# directories listed in $ABCPATH (separated by colons).
+#
+# Exit status: 0 on success, 1 if a file cannot be read or an include
+# cannot be resolved, 2 on usage error.
+#
+# Environment: ABCFLATTEN_DATEFMT  format of the date for $d
+#                                   (default: %Y-%m-%d %H:%M)
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-if [ $# -lt 1 ]
+
+usage() {
+  echo "# Usage: abcflatten [-l | -M <targets>] <abc_file>"
+  echo "#        Flatten an ABC music file, processing includes recursively."
+  echo "#        Recognizes %%abc-include, I:abc-include and #include."
+  echo "#        -l: list the file and its includes; -M: print make dependencies."
+  exit "$1"
+}
+
+mode=flat
+targets=
+while getopts "lM:h" opt
+do
+  case $opt in
+    l) mode=list ;;
+    M) mode=deps ; targets=$OPTARG ;;
+    h) usage 0 ;;
+    *) usage 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+[ $# -eq 1 ] || usage 2
+src=$1
+if [ ! -f "$src" ] || [ ! -r "$src" ]
 then
-  echo "# Usage: abcflatten <abc_file>"
-  echo "#        Flatten the first level of includes in an ABC music file."
-  echo "#        Recognizes %%abc-include, I:include and #include."
+  echo "abcflatten: cannot read $src" >&2
   exit 1
 fi
-cd `dirname "$1"`
-includes=`grep -E '^(I:|%%)abc-include' "$1" | sed -e 's/..abc-include  *\([^ ]*\).*$/\1/'`
 
-#dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "$1" ${includes}`
-dates=`echo "$1" ${includes} | xargs stat -t '%Y%m%d%H%M.%S' -f '%Sm'`
-maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
-fmaxdate=`date -j -f '%Y%m%d%H%M.%S' ${maxdate} '+%Y-%m-%d %H:%M'`
-while IFS= read -r line
-do
-  if [[ "$line" =~ ^%%abc-include ]]
-  then
-    cat `echo "$line" | sed -e 's/^%%abc-include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
-  elif [[ "$line" =~ ^I:abc-include ]]
-  then
-    cat `echo "$line" | sed -e 's/^I:abc-include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
-  elif [[ "$line" =~ ^#include ]]
-  then
-    cat `echo "$line" | sed -e 's/^#include *"\{0,1\}\([^ "]*\)"\{0,1\} *$/\1/'`
-  else
-# Use echo -E to avoid the expansion of escape sequences such as \n
-    echo -E "$line"
-  fi
-done < "$1" | \
-  sed -e "/^%%header /s/\\\$d/${fmaxdate}/g" \
-      -e "/^%%footer /s/\\\$d/${fmaxdate}/g" \
->&1
+# The awk program works in two modes:
+#   mode=list  print the names of all the files involved (main file first)
+#   mode=flat  print the flattened file, replacing $d in header/footer lines
+# It only uses POSIX awk features (tested with mawk, gawk --posix and BWK awk).
+AWKPROG='
+function err(msg) { printf "abcflatten: %s\n", msg > "/dev/stderr"; failed = 1 }
+function dirof(p) {
+  if (p !~ /\//) return "."
+  sub(/\/[^\/]*$/, "", p)
+  return (p == "") ? "/" : p
+}
+function join(d, f) {
+  if (f ~ /^\// || d == ".") return f
+  return d "/" f
+}
+function readable(f,    r, l) {
+  # Never touch a file being read: close() would rewind it
+  if (f in active) return 1
+  r = (getline l < f)
+  if (r < 0) return 0
+  close(f)
+  return 1
+}
+# Name of the file included by line, or "" if line is not an include directive
+function incname(line,    s, i) {
+  s = line
+  sub(/\r$/, "", s)
+  if (s ~ /^%%abc-include[ \t]/)          sub(/^%%abc-include[ \t]+/, "", s)
+  else if (s ~ /^I:[ \t]*abc-include[ \t]/) sub(/^I:[ \t]*abc-include[ \t]+/, "", s)
+  else if (s ~ /^#include[ \t]/)          sub(/^#include[ \t]+/, "", s)
+  else return ""
+  if (substr(s, 1, 1) == "\"") {
+    s = substr(s, 2)
+    i = index(s, "\"")
+    if (i > 0) s = substr(s, 1, i - 1)
+  } else {
+    sub(/[ \t]*%.*$/, "", s)
+    sub(/[ \t]+$/, "", s)
+  }
+  return s
+}
+function resolve(name, dir,    c, i) {
+  if (name ~ /^\//) return readable(name) ? name : ""
+  c = join(dir, name);    if (readable(c)) return c
+  c = join(topdir, name); if (readable(c)) return c
+  for (i = 1; i <= npath; i++) {
+    if (abcpath[i] == "") continue
+    c = join(abcpath[i], name); if (readable(c)) return c
+  }
+  return ""
+}
+function process(f, depth,    line, r, name, p, d) {
+  if (f in active) { err("include loop on " f); return }
+  if (depth > 20)  { err("too many include levels in " f); return }
+  active[f] = 1
+  if (mode == "list" && !(f in listed)) { listed[f] = 1; print f }
+  d = dirof(f)
+  while ((r = (getline line < f)) > 0) {
+    name = incname(line)
+    if (name != "") {
+      p = resolve(name, d)
+      if (p == "") err(f ": cannot find included file \"" name "\"")
+      else process(p, depth + 1)
+      continue
+    }
+    if (mode == "flat") {
+      if (date != "" && line ~ /^(%%|I:)(header|footer)[ \t]/) gsub(/\$d/, date, line)
+      print line
+    }
+  }
+  if (r < 0) err("cannot read " f)
+  close(f)
+  delete active[f]
+}
+BEGIN {
+  failed = 0
+  topdir = dirof(src)
+  npath = split(abcpathstr, abcpath, ":")
+  process(src, 0)
+  exit failed
+}
+'
 
+# Modification time (seconds since the epoch) of a file, GNU or BSD stat
+mtime() {
+  stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"
+}
+# Format a date given in seconds since the epoch, GNU or BSD date
+fmtdate() {
+  date -d "@$1" "+$2" 2>/dev/null || date -r "$1" "+$2"
+}
+
+files=$(awk -v mode=list -v src="$src" -v abcpathstr="${ABCPATH:-}" "$AWKPROG") || exit 1
+
+case $mode in
+  list)
+    printf '%s\n' "$files"
+    ;;
+  deps)
+    # Escape spaces for make
+    esc() { printf '%s' "$1" | sed -e 's/ /\\ /g'; }
+    printf '%s:' "$targets"
+    printf '%s\n' "$files" | while IFS= read -r f
+    do
+      printf ' \\\n  %s' "$(esc "$f")"
+    done
+    printf '\n'
+    printf '%s\n' "$files" | sed -e '1d' | while IFS= read -r f
+    do
+      printf '\n%s:\n' "$(esc "$f")"
+    done
+    ;;
+  flat)
+    latest=$(printf '%s\n' "$files" | while IFS= read -r f; do mtime "$f"; done \
+             | sort -n | tail -n 1)
+    date=
+    if [ -n "$latest" ]
+    then
+      date=$(fmtdate "$latest" "${ABCFLATTEN_DATEFMT:-%Y-%m-%d %H:%M}")
+    fi
+    awk -v mode=flat -v src="$src" -v date="$date" -v abcpathstr="${ABCPATH:-}" "$AWKPROG"
+    ;;
+esac

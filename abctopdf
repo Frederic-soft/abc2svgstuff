@@ -1,16 +1,20 @@
 #!/bin/sh
 ##################################################################################
 #
-# A wrapper to run abctopdf with node when abc2svg is not installed with npm
+# A wrapper to run the abctopdf script of abc2svg wherever abc2svg is installed
+# (see abc2svg).
+#
+#   abctopdf [<options>] <abc_file> -o <pdf_file>
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-# Path to the directory containing the "abc2svg" installaion directory
-# It plays the same role as the node_modules directory
-ME=`realpath $0`
-CURDIR=`dirname ${ME}`
-ABC2SVGDIR=`realpath "${CURDIR}/.."`
-
-${ABC2SVGDIR}/abc2svg/abctopdf "$@"
+abc2svg_topdf "$@"

@@ -1,24 +1,43 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file into an HTML file with dynamic rendering and playback 
-# of the score, using abc2svg
+# Convert an ABC file into an HTML file with dynamic rendering and playback
+# of the score, using abc2svg. The includes are processed, and $d is replaced
+# by the date of the most recent file in %%header and %%footer lines.
 #
-# abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>] [-s <ss-pref_chars>]
+#   abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>]
+#                         [-j "<abc2svg_scripts>"] [-s <ss-pref_chars>]
+#
+# By default, the HTML file is written next to the ABC file. An explicit
+# <html_file> is relative to the current directory.
+#
+# The page loads the abc2svg scripts from <abc2svg_script_url>, which defaults
+# to $ABC2SVG_JSURL, or to the scripts published by the author of abc2svg
+# (http://moinejf.free.fr/js). To use a local installation, give for instance
+# -u ../abc2svg or -u file:///usr/local/abc2svg (the URL is resolved by the
+# browser, relative to the HTML file).
+#
+# Environment: ABC2SVG_JSURL  default URL of the abc2svg scripts
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-#
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
+
 ## URL of the abc2svg files
-# abc2svgurl="http://moinejf.free.fr/js"
 # abc2svgurl="file:///usr/local/lib/node_modules/abc2svg"
 # abc2svgurl="file:///usr/local/ABC/abc2svg"
-abc2svgurl="../abc2svg"
+# abc2svgurl="../abc2svg"
+abc2svgurl=${ABC2SVG_JSURL:-http://moinejf.free.fr/js}
 
 ## Scripts to include in the header
 # abc2svgscripts="abc2svg-1.js abcemb-1.js play-1.js follow-1.js"
-# abc2svgscripts="abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js"
 # abc2svgscripts="abc2svg-1.js abcweb2-1.js snd-1.js follow-1.js"
 # abc2svgscripts="abcweb-1.js snd-1.js follow-1.js"
 abc2svgscripts="abcweb-1.js snd-1.js"
@@ -26,74 +45,54 @@ abc2svgscripts="abcweb-1.js snd-1.js"
 ## Default characters for format lines
 sspref="%"
 
-if [ $# -lt 1 ]
-then
-  echo "# Usage: abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>] [-s <ss-pref_chars>]"
+usage() {
+  echo "# Usage: $PROG <abc_file> [-o <html_file>] [-u <abc2svg_script_url>]"
+  echo "#                         [-j \"<abc2svg_scripts>\"] [-s <ss-pref_chars>]"
   echo "#        Converts an ABC music file into a web page, with MIDI rendering"
   echo "#        and refering to individual abc2svg script from the given URL."
   exit 1
-fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
-outfile="${filename}.html"
-shift 1
-while [ $# -ge 2 ]
+}
+
+[ $# -ge 1 ] || usage
+src=$1
+shift
+outfile=
+while getopts "o:u:j:s:" opt
 do
-  case $1 in
-  "-o" )
-    outfile="$2"
-  ;;
-  "-u" )
-    abc2svgurl="$2"
-  ;;
-  "-s" )
-  	sspref="$2"
-  ;;
-  *)
-    echo "# Unrecognized option: $1 $2"
-    exit 1
-  ;;
+  case $opt in
+    o) outfile=$(abspath "$OPTARG") ;;
+    u) abc2svgurl=$OPTARG ;;
+    j) abc2svgscripts=$OPTARG ;;
+    s) sspref=$OPTARG ;;
+    *) usage ;;
   esac
-  shift 2
 done
-if [ $# -ge 1 ]
-then
-  echo "# Uncomplete or unrecognized option: $1"
-  exit 1
-fi
+shift $((OPTIND - 1))
+[ $# -eq 0 ] || { echo "# Unrecognized argument: $1"; usage; }
 
-cd "$directory"
-# Find included ABC files
-includes=`grep -E '^(I:|%%)abc-include' "${filename}.abc" | sed -e 's/..abc-include  *\([^ ]*\).*$/\1/'`
-# Get the modification date of all files
-#dates=`stat -t '%Y%m%d%H%M.%S' -f '%Sm' "${filename}.abc" ${includes}`
-dates=`echo "${filename}.abc" ${includes} | xargs stat -t '%Y%m%d%H%M.%S' -f '%Sm'`
-# Get the most recent modification date
-maxdate=`echo $dates | tr ' ' '\n' | sort -r | head -n 1`
-# Format this date as YYYY-MM-DD hh:mm
-fmaxdate=`date -j -f '%Y%m%d%H%M.%S' ${maxdate} '+%Y-%m-%d %H:%M'`
-# Get the version of abc2svg
-# abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-[0-9\.]*\).*/\1/'`
-abc2svgversion=`abc2svg 2>&1 | head -n 1 | sed -e 's/.*\(abc2svg-.*\)/\1/'`
-# Prépare the HTML file
-cat > "${outfile}" << ENDOFPRELUDE
-<!DOCTYPE html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-ENDOFPRELUDE
-echo "<meta name=\"generator\" content=\"${abc2svgversion}\"/>" >> "${outfile}"
-echo "<!-- CreationDate: `date`-->" >> "${outfile}"
+abc_source "$src"
+[ -n "$outfile" ] || outfile=$SRC_DIR/$SRC_NAME.html
+make_tmpdir
+# Process includes and put the correct modification date in headers and footers
+abc_flatten "$SRC" "$TMPD/s/$SRC"
+version=$(abc2svg_version)
 
-for script in ${abc2svgscripts}
-do
-  echo "<script type=\"text/javascript\" src=\"${abc2svgurl}/${script}\"></script>" >> "${outfile}"
-done
-
-# <script type="text/javascript">
-#   window.no_scroll = true ;  // de-activate auto-scrolling when playing the music
-# </script>
-
-cat >> "${outfile}" << ENDOFSTYLE
+{
+  printf '%s\n' \
+    '<!DOCTYPE html>' \
+    '<html>' \
+    '<head>' \
+    '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>' \
+    "<meta name=\"generator\" content=\"${version}\"/>" \
+    "<!-- CreationDate: $(date) -->"
+  for script in $abc2svgscripts
+  do
+    printf '<script type="text/javascript" src="%s/%s"></script>\n' "$abc2svgurl" "$script"
+  done
+  # <script type="text/javascript">
+  #   window.no_scroll = true ;  // de-activate auto-scrolling when playing the music
+  # </script>
+  cat << 'ENDOFSTYLE'
 <style type="text/css">
 	@media print {
 		body { margin:0; padding:0; border:0}
@@ -102,25 +101,19 @@ cat >> "${outfile}" << ENDOFSTYLE
 	@page {size:8.27in 11.69in; margin:0}
 	svg {display:block}
 	.nop {line-height: 2.5ex}
-	* {cursor: pointer;}  // for iPad onclick
+	* {cursor: pointer;}  /* for iPad onclick */
 </style>
 ENDOFSTYLE
-
-echo "<title>${filename}</title>" >> "${outfile}"
-echo "</head>\n<body>\n<script type=\"text/vnd.abc\" class=\"abc\">" >> "${outfile}"
-
-if [ ! "${sspref}" = "%" ]
-then
-  echo "%%ss-pref ${sspref}" >> "${outfile}"
-fi
-
-# Process includes and put the correct modification date in headers and footers
-abcflatten "${filename}.abc" \
-    | sed -e "/^%%header /s/\\\$d/${fmaxdate}/g" \
-          -e "/^%%footer /s/\\\$d/${fmaxdate}/g" \
->> "${outfile}"
-
-echo "</script>\n</body>\n</html>" >> "${outfile}"
+  printf '<title>%s</title>\n' "$SRC_NAME"
+  printf '%s\n' '</head>' '<body>' '<script type="text/vnd.abc" class="abc">'
+  if [ "$sspref" != "%" ]
+  then
+    printf '%%%%ss-pref %s\n' "$sspref"
+  fi
+  cat "$TMPD/s/$SRC"
+  printf '%s\n' '</script>' '</body>' '</html>'
+} > "$TMPD/out.html"
+cp "$TMPD/out.html" "$outfile"
 
 ## Can be used in BBEdit with the following OSA script in the Scripting folder
 # tell application "BBEdit"

@@ -1,33 +1,57 @@
 #!/bin/sh
-INSTALLDIR="$HOME/bin"
-TOOLS="abc2svg \
-	  abc2svgabc \
-	  abc2svghtml \
-	  abc2svgmei \
-	  abc2svgmidi \
-	  abc2svgpdf \
-	  abc2svgpdfcrop \
-	  abc2svgweb \
-	  abc2svgxml \
-	  abcflatten \
-	  abcrmtext \
-	  abctopdf"
+##################################################################################
+#
+# Install the abc2svgstuff tools by creating symbolic links in a directory
+# of the PATH.
+#
+#   install.sh [-y] [<install_dir>]      (default: $HOME/bin)
+#
+#   -y  do not ask for confirmation
+#
+# Frédéric Boulanger                     frederic.softdev@gmail.com
+#
+##################################################################################
+TOOLS="abc2svg
+abc2svgabc
+abc2svgbuild
+abc2svghtml
+abc2svgmei
+abc2svgmidi
+abc2svgpdf
+abc2svgpdfcrop
+abc2svgweb
+abc2svgwpdf
+abc2svgxml
+abcflatten
+abcrmtext
+abctopdf"
 
-ME=`realpath $0`
-CURDIR=`dirname ${ME}`
+ask=yes
+if [ "${1:-}" = "-y" ]
+then
+  ask=
+  shift
+fi
+INSTALLDIR=${1:-$HOME/bin}
+CURDIR=$(cd "$(dirname "$0")" && pwd)
 
 echo "Installing from ${CURDIR} to ${INSTALLDIR}"
-read -p "Continue [y/n]? " -r
-if [[ ! ${REPLY} =~ ^[Yy]$ ]]
+if [ -n "$ask" ]
 then
-	exit 1
+  printf 'Continue [y/n]? '
+  read -r reply
+  case $reply in
+    [Yy]*) ;;
+    *) exit 1 ;;
+  esac
 fi
-if [[ ! -d "${INSTALLDIR}" ]]
-then
-	mkdir -p "${INSTALLDIR}"
-fi
+mkdir -p "${INSTALLDIR}" || exit 1
 for t in ${TOOLS}
 do
-	echo "ln -s ${CURDIR}/$t ${INSTALLDIR}/$t"
-	ln -s "${CURDIR}/$t" "${INSTALLDIR}/$t"
+  echo "ln -sf ${CURDIR}/$t ${INSTALLDIR}/$t"
+  ln -sf "${CURDIR}/$t" "${INSTALLDIR}/$t"
 done
+case ":$PATH:" in
+  *":${INSTALLDIR}:"*) ;;
+  *) echo "Warning: ${INSTALLDIR} is not in your PATH" ;;
+esac

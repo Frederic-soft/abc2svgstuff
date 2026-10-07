@@ -1,35 +1,26 @@
-#!/bin/zsh
+#!/bin/sh
 ##################################################################################
 #
-# Removes the contents of text blocks in an ABC file to avoid perturbation 
-# in some conversions (for instance with abc2xml).
+# Removes the text blocks (%%begintext ... %%endtext) of an ABC file to avoid
+# perturbation in some conversions (for instance with abc2xml).
 #
-# This command is used as a filter from standard input to standard output.
+#   abcrmtext [<abc_file>...]
+#
+# Reads the given files, or standard input, and writes on standard output.
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
-if [ $# -gt 0 ]
-then
-  echo "# Usage: abcrmtext"
-  echo "#        Filters out the contents of %%begintext/%%endtext blocks"
-  echo "#        from standard input to standard output."
-  exit 1
-fi
-gobbling=0
-while IFS= read -r line
-do
-  if [[ "$line" =~ ^%%begintext ]]
-  then
-    gobbling=1
-  elif [[ "$line" =~ ^%%endtext ]]
-  then
-    gobbling=0
-  else
-    if [ $gobbling -eq 0 ]
-    then
-		# Use echo -E to avoid the expansion of escape sequences such as \n
-    	echo -E "$line"
-	  fi
-  fi
-done
+case ${1:-} in
+  -h|--help)
+    echo "# Usage: abcrmtext [<abc_file>...]"
+    echo "#        Filters out the %%begintext/%%endtext blocks"
+    echo "#        from the files or standard input to standard output."
+    exit 0
+    ;;
+esac
+exec awk '
+  /^%%begintext/ { intext = 1; next }
+  /^%%endtext/   { intext = 0; next }
+  !intext
+' "$@"

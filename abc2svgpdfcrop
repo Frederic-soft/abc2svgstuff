@@ -1,24 +1,46 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file to PDF cropped at its natural size.
+# Convert an ABC file to PDF cropped at its natural size (abctopdf + pdfcrop).
+# The PDF file is written next to the ABC file.
 #
-# abc2svgpdfcrop <abc_file> [<options>]
+#   abc2svgpdfcrop <abc_file> [<abctopdf_options>]
+#
+# Environment: PDFCROP  pdfcrop command (default: pdfcrop if it is in the PATH,
+#                       else the copy in abc2svgstuff; both need perl and
+#                       ghostscript)
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
+
 if [ $# -lt 1 ]
 then
-	echo "# Usage: $0 abc_file [<options>]"
-	echo "# Converts an ABC file to PDF cropped at its natural size"
-	exit 1
+  echo "# Usage: $PROG <abc_file> [<options>]"
+  echo "# Converts an ABC file to PDF cropped at its natural size"
+  exit 1
 fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
+abc_source "$1"
 shift
-cd "$directory"
-abcflatten "${filename}.abc" > "${filename}_tmp$$.abc"
-abctopdf "$@" "${filename}_tmp$$.abc" -o "${filename}_tmp$$.pdf"
-pdfcrop "${filename}_tmp$$.pdf" "${filename}.pdf"
-rm "${filename}_tmp$$.abc" "${filename}_tmp$$.pdf"
+make_tmpdir
+abc_flatten "$SRC" "$TMPD/s/$SRC"
+abc2svg_topdf "$@" "$TMPD/s/$SRC" -o "$TMPD/s/$SRC_NAME.pdf" || die "abctopdf failed on $SRC"
+crop() {
+  if [ -n "${PDFCROP:-}" ]
+  then
+    $PDFCROP "$@"
+  elif command -v pdfcrop >/dev/null 2>&1
+  then
+    pdfcrop "$@"
+  else
+    perl "$STUFFDIR/pdfcrop" "$@"
+  fi
+}
+crop "$TMPD/s/$SRC_NAME.pdf" "$SRC_DIR/$SRC_NAME.pdf" >/dev/null || die "pdfcrop failed"

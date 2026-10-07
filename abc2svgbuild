@@ -1,57 +1,65 @@
 #!/bin/sh
 ##################################################################################
 #
-# Convert an ABC file into a web page, a PDF file, a MusicXML file and a MuseScore file, 
-# using abc2svg, abc2xml, and mscore
+# Convert an ABC file into a web page, a PDF file, a MusicXML file and a MuseScore
+# file, using abc2svg, abc2xml, and mscore. Only the first tune of the file is
+# exported to MusicXML and MuseScore.
 #
-# abc2svgbuild <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]
+#   abc2svgbuild <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]
+#
+# Environment: MSCORE  MuseScore command (default: mscore). If it cannot be found,
+#                      the MuseScore and MusicXML exports are skipped.
 #
 # Frédéric Boulanger                     frederic.softdev@gmail.com
 #
 ##################################################################################
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+STUFFDIR=$(cd "$(dirname "$self")" && pwd)
+. "$STUFFDIR/abc2svgstuff.sh"
 
-if [ $# -lt 1 ]
-then
-  echo "# Usage: abc2svgbuild <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]"
+usage() {
+  echo "# Usage: $PROG <abc_file> [-s <ss-pref_chars>] [-real_sound <0|1>]"
   echo "#        Converts an ABC music file into html, PDF, XML and MuseScore files."
   echo "#        If real_sound is 1, the XML and MuseScore file will correspond to the sounding pitch."
   exit 1
-fi
-directory=`dirname "$1"`
-filename=`basename "$1" ".abc"`
-name="${filename}.abc"
+}
+
+[ $# -ge 1 ] || usage
+src=$1
 shift
-cd "$directory"
 sspref="%"
 realsound="0"
 while [ $# -ge 2 ]
 do
   case $1 in
-  "-s" )
-  	sspref="$2"
-  ;;
-  "-real_sound" )
-  	realsound="$2"
-  ;;
-  *)
-    echo "# Unrecognized option: $1 $2"
-    exit 1
-  ;;
+    -s) sspref=$2 ;;
+    -real_sound) realsound=$2 ;;
+    *) echo "# Unrecognized option: $1 $2" ; usage ;;
   esac
   shift 2
 done
-if [ $# -ge 1 ]
-then
-  echo "# Uncomplete or unrecognized option: $1"
-  exit 1
-fi
+[ $# -eq 0 ] || { echo "# Incomplete or unrecognized option: $1" ; usage ; }
 
-echo "abc2svgweb \"${name}\" -s ${sspref}"
-abc2svgweb "${name}" -s ${sspref}
-echo "abc2svgpdf \"${name}\""
-abc2svgpdf "${name}"
-echo "abc2svgxml \"${name}\" -s %M -real_sound ${realsound} $@"
-abc2svgxml "${name}" -s %M -real_sound ${realsound} $@
-mscore -o "${filename}.mscz" "${filename}_1.musicxml"
-rm -f "${filename}_1.musicxml"
-mscore -o "${filename}.musicxml" "${filename}.mscz"
+abc_source "$src"
+MSCORE=${MSCORE:-mscore}
+
+run() {
+  echo "$*"
+  "$@" || die "$1 failed"
+}
+
+run sh "$STUFFDIR/abc2svgweb" "$SRC" -s "$sspref"
+run sh "$STUFFDIR/abc2svgpdf" "$SRC"
+if command -v "$MSCORE" >/dev/null 2>&1
+then
+  run sh "$STUFFDIR/abc2svgxml" "$SRC" -s "%M" -real_sound "$realsound"
+  run "$MSCORE" -o "${SRC_NAME}.mscz" "${SRC_NAME}_1.musicxml"
+  rm -f "${SRC_NAME}_1.musicxml"
+  run "$MSCORE" -o "${SRC_NAME}.musicxml" "${SRC_NAME}.mscz"
+else
+  warn "$MSCORE not found, MusicXML and MuseScore exports skipped"
+fi
