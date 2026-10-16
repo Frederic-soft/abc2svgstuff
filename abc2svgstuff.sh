@@ -100,6 +100,7 @@ abc2svg_version() {
 # Create a temporary directory, removed when the script exits
 make_tmpdir() {
   TMPD=$(mktemp -d "${TMPDIR:-/tmp}/abc2svgstuff.XXXXXX") || die "cannot create a temporary directory"
+#  printf 'TMPD=%s\n' "$TMPD"
   mkdir "$TMPD/s"  # files named after the source file go here
   trap 'rm -rf "$TMPD"' EXIT
   trap 'exit 130' INT

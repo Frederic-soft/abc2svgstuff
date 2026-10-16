@@ -5,7 +5,7 @@
 # of the score, using abc2svg. The includes are processed, and $d is replaced
 # by the date of the most recent file in %%header and %%footer lines.
 #
-#   abc2svgweb <abc_file> [-o <html_file>] [-u <abc2svg_script_url>]
+#   abc2svgweb <abc_file> [-d] [-f] [-o <html_file>] [-u <abc2svg_script_url>]
 #                         [-j "<abc2svg_scripts>"] [-s <ss-pref_chars>]
 #
 # By default, the HTML file is written next to the ABC file. An explicit
@@ -46,7 +46,7 @@ abc2svgscripts="abcweb-1.js snd-1.js"
 sspref="%"
 
 usage() {
-  echo "# Usage: $PROG <abc_file> [-o <html_file>] [-u <abc2svg_script_url>]"
+  echo "# Usage: $PROG <abc_file> [-d] [-f] [-o <html_file>] [-u <abc2svg_script_url>]"
   echo "#                         [-j \"<abc2svg_scripts>\"] [-s <ss-pref_chars>]"
   echo "#        Converts an ABC music file into a web page, with MIDI rendering"
   echo "#        and refering to individual abc2svg script from the given URL."
@@ -57,9 +57,13 @@ usage() {
 src=$1
 shift
 outfile=
-while getopts "o:u:j:s:" opt
+debug=0
+final=0
+while getopts "dfo:u:j:s:" opt
 do
   case $opt in
+    d) debug=1 ;;
+    f) final=1 ;;
     o) outfile=$(abspath "$OPTARG") ;;
     u) abc2svgurl=$OPTARG ;;
     j) abc2svgscripts=$OPTARG ;;
@@ -92,18 +96,34 @@ version=$(abc2svg_version)
   # <script type="text/javascript">
   #   window.no_scroll = true ;  // de-activate auto-scrolling when playing the music
   # </script>
+if [ $final -eq 1 ]
+then
   cat << 'ENDOFSTYLE'
 <style type="text/css">
 	@media print {
-		body { margin:0; padding:0; border:0}
-		.nop {display:none}
+		body { margin:0; padding:0; border:0;}
+		.nop {display:none;}
 	}
-	@page {size:8.27in 11.69in; margin:0}
-	svg {display:block}
-	.nop {line-height: 2.5ex}
+	@page {size:8.27in 11.69in; margin:0;}
+	svg {display:block;}
+	.nop {display: none;}
 	* {cursor: pointer;}  /* for iPad onclick */
 </style>
 ENDOFSTYLE
+else
+  cat << 'ENDOFSTYLE'
+<style type="text/css">
+	@media print {
+		body { margin:0; padding:0; border:0;}
+		.nop {display:none;}
+	}
+	@page {size:8.27in 11.69in; margin:0;}
+	svg {display:block;}
+	.nop {line-height: 2.5ex;}
+	* {cursor: pointer;}  /* for iPad onclick */
+</style>
+ENDOFSTYLE
+fi
   printf '<title>%s</title>\n' "$SRC_NAME"
   printf '%s\n' '</head>' '<body>' '<script type="text/vnd.abc" class="abc">'
   if [ "$sspref" != "%" ]
@@ -114,6 +134,11 @@ ENDOFSTYLE
   printf '%s\n' '</script>' '</body>' '</html>'
 } > "$TMPD/out.html"
 cp "$TMPD/out.html" "$outfile"
+if [ $debug -eq 1 ]
+then
+  cp "${TMPD}/s/${SRC}" "${SRC_NAME}_flatten.abc"
+fi
+
 
 ## Can be used in BBEdit with the following OSA script in the Scripting folder
 # tell application "BBEdit"
