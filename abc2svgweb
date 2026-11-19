@@ -34,7 +34,7 @@ STUFFDIR=$(cd "$(dirname "$self")" && pwd)
 # abc2svgurl="file:///usr/local/lib/node_modules/abc2svg"
 # abc2svgurl="file:///usr/local/ABC/abc2svg"
 # abc2svgurl="../abc2svg"
-abc2svgurl=${ABC2SVG_JSURL:-http://moinejf.free.fr/js}
+abc2svgurl=${ABC2SVG_JSURL:-https://moinejf.pages-perso.free.fr/js}
 
 ## Scripts to include in the header
 # abc2svgscripts="abc2svg-1.js abcemb-1.js play-1.js follow-1.js"
@@ -91,7 +91,7 @@ version=$(abc2svg_version)
     "<!-- CreationDate: $(date) -->"
   for script in $abc2svgscripts
   do
-    printf '<script type="text/javascript" src="%s/%s"></script>\n' "$abc2svgurl" "$script"
+    printf '<script type="text/javascript" src="%s/%s" defer></script>\n' "$abc2svgurl" "$script"
   done
   # <script type="text/javascript">
   #   window.no_scroll = true ;  // de-activate auto-scrolling when playing the music
